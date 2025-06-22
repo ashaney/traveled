@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useVisits } from '@/contexts/VisitsContext';
 import { japanPrefectures } from '@/data/japan';
@@ -74,6 +74,9 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
               </span>
             )}
           </DialogTitle>
+          <DialogDescription>
+            Record your visit to {region.name} with a rating and optional notes.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
