@@ -39,7 +39,17 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
     return colors[rating];
   };
 
-  const renderStars = (rating: VisitRating) => {
+  const renderStars = (rating: VisitRating, visitType: VisitRating) => {
+    // For types 0 (Never been), 1 (Passed through), 2 (Brief stop), show N/A
+    const showNAForTypes = [0, 1, 2];
+    if (showNAForTypes.includes(visitType)) {
+      return <span className="text-xs text-gray-500 italic">N/A</span>;
+    }
+    
+    if (rating === 0) {
+      return <span className="text-xs text-gray-500 italic">None</span>;
+    }
+    
     return Array.from({ length: 5 }, (_, i) => (
       <Star key={i} className={`w-3 h-3 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
     ));
@@ -188,8 +198,10 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {renderStars(visit.rating)}
-                      <span className="ml-1 text-xs text-gray-600">({visit.rating})</span>
+                      {renderStars(visit.rating, visit.rating)}
+                      {![0, 1, 2].includes(visit.rating) && visit.rating > 0 && (
+                        <span className="ml-1 text-xs text-gray-600">({visit.rating})</span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">

@@ -95,7 +95,9 @@ export function VisitsProvider({ children }: { children: React.ReactNode }) {
 
   const getStats = useCallback((countryId: string, totalRegions: number): VisitStats => {
     const countryVisits = getVisitsByCountry(countryId);
-    const visitedRegions = countryVisits.length;
+    // Exclude "Never been" (rating 0) visits from progress count
+    const actualVisits = countryVisits.filter(visit => visit.rating !== 0);
+    const visitedRegions = actualVisits.length;
     
     const ratingBreakdown = countryVisits.reduce((acc, visit) => {
       acc[visit.rating] = (acc[visit.rating] || 0) + 1;
@@ -109,7 +111,7 @@ export function VisitsProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    const lastVisit = countryVisits
+    const lastVisit = actualVisits
       .filter(visit => visit.visitYear)
       .sort((a, b) => (b.visitYear || 0) - (a.visitYear || 0))[0]?.visitYear;
 

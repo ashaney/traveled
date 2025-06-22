@@ -47,6 +47,14 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
     }
   }, [existingVisit]);
 
+  // Auto-set rating to 0 for N/A visit types
+  React.useEffect(() => {
+    const showNAForTypes = [0, 1, 2];
+    if (showNAForTypes.includes(selectedType)) {
+      setSelectedRating(0);
+    }
+  }, [selectedType]);
+
   const handleSave = () => {
     if (!regionId) return;
 
@@ -79,18 +87,40 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   };
 
   const renderStars = (rating: VisitRating) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star 
-        key={i} 
-        className={cn(
-          "w-6 h-6 cursor-pointer transition-colors",
-          i < rating 
-            ? "fill-yellow-400 text-yellow-400" 
-            : "text-gray-300 hover:text-yellow-200"
-        )}
-        onClick={() => setSelectedRating((i + 1) as VisitRating)}
-      />
-    ));
+    // For types 0 (Never been), 1 (Passed through), 2 (Brief stop), don't show ratings
+    const showNAForTypes = [0, 1, 2];
+    const shouldShowNA = showNAForTypes.includes(selectedType);
+    
+    if (shouldShowNA) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500 italic">N/A - Not applicable for this visit type</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Star 
+            key={i} 
+            className={cn(
+              "w-6 h-6 cursor-pointer transition-colors",
+              i < rating 
+                ? "fill-yellow-400 text-yellow-400" 
+                : "text-gray-300 hover:text-yellow-200"
+            )}
+            onClick={() => setSelectedRating((i + 1) as VisitRating)}
+          />
+        ))}
+        <button
+          onClick={() => setSelectedRating(0)}
+          className="ml-2 text-xs text-gray-500 hover:text-gray-700 underline"
+        >
+          Clear
+        </button>
+      </div>
+    );
   };
 
   if (!region) return null;
@@ -143,7 +173,9 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
             </Label>
             <div className="flex items-center gap-1">
               {renderStars(selectedRating)}
-              <span className="ml-2 text-sm text-gray-600">({selectedRating} star{selectedRating !== 1 ? 's' : ''})</span>
+              {![0, 1, 2].includes(selectedType) && selectedRating > 0 && (
+                <span className="ml-2 text-sm text-gray-600">({selectedRating} star{selectedRating !== 1 ? 's' : ''})</span>
+              )}
             </div>
           </div>
 
