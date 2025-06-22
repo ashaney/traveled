@@ -21,7 +21,8 @@ export interface Visit {
   regionId: string;
   countryId: string;
   rating: VisitRating;
-  visitDate?: Date;
+  visitYear?: number;
+  lengthOfStay?: string; // e.g., "3 days", "2 weeks", "1 month"
   notes?: string;
   photos?: string[];
   duration?: number; // days
@@ -34,7 +35,7 @@ export interface VisitStats {
   visitedRegions: number;
   percentageVisited: number;
   ratingBreakdown: Record<VisitRating, number>;
-  lastVisit?: Date;
+  lastVisit?: number; // year
 }
 
 export const RATING_LABELS: Record<VisitRating, string> = {

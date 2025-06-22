@@ -5,7 +5,7 @@ import { Visit, VisitRating, VisitStats } from '@/types';
 
 interface VisitsContextType {
   visits: Visit[];
-  addVisit: (regionId: string, countryId: string, rating: VisitRating, notes?: string, visitDate?: Date) => void;
+  addVisit: (regionId: string, countryId: string, rating: VisitRating, notes?: string, visitDate?: Date, visitYear?: number, lengthOfStay?: string) => void;
   updateVisit: (visitId: string, updates: Partial<Visit>) => void;
   deleteVisit: (visitId: string) => void;
   getVisitByRegion: (regionId: string) => Visit | undefined;
@@ -55,14 +55,15 @@ export function VisitsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [visits, isLoaded]);
 
-  const addVisit = useCallback((regionId: string, countryId: string, rating: VisitRating, notes?: string, visitDate?: Date) => {
+  const addVisit = useCallback((regionId: string, countryId: string, rating: VisitRating, notes?: string, visitDate?: Date, visitYear?: number, lengthOfStay?: string) => {
     const newVisit: Visit = {
       id: crypto.randomUUID(),
       regionId,
       countryId,
       rating,
       notes,
-      visitDate,
+      visitYear,
+      lengthOfStay,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -109,8 +110,8 @@ export function VisitsProvider({ children }: { children: React.ReactNode }) {
     }
 
     const lastVisit = countryVisits
-      .filter(visit => visit.visitDate)
-      .sort((a, b) => (b.visitDate?.getTime() || 0) - (a.visitDate?.getTime() || 0))[0]?.visitDate;
+      .filter(visit => visit.visitYear)
+      .sort((a, b) => (b.visitYear || 0) - (a.visitYear || 0))[0]?.visitYear;
 
     return {
       totalRegions,

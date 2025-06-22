@@ -56,9 +56,9 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
         comparison = a.rating - b.rating;
         break;
       case 'date':
-        const dateA = a.visitDate?.getTime() || 0;
-        const dateB = b.visitDate?.getTime() || 0;
-        comparison = dateA - dateB;
+        const yearA = a.visitYear || 0;
+        const yearB = b.visitYear || 0;
+        comparison = yearA - yearB;
         break;
     }
     
@@ -76,12 +76,13 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
 
   const exportData = () => {
     const csvData = [
-      ['Prefecture', 'Rating', 'Rating Label', 'Visit Date', 'Notes'],
+      ['Prefecture', 'Type', 'Rating', 'Year', 'Length of Stay', 'Notes'],
       ...sortedVisits.map(visit => [
         getRegionName(visit.regionId),
-        visit.rating.toString(),
         RATING_LABELS[visit.rating],
-        visit.visitDate?.toLocaleDateString() || '',
+        visit.rating.toString(),
+        visit.visitYear?.toString() || '',
+        visit.lengthOfStay || '',
         visit.notes || ''
       ])
     ];
@@ -150,8 +151,9 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
+                <TableHead className="font-semibold w-40">Type</TableHead>
                 <TableHead 
-                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-48 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('rating')}
                 >
                   Rating
@@ -160,14 +162,15 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-24 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('date')}
                 >
-                  Visit Date
+                  Year
                   {sortBy === 'date' && (
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
+                <TableHead className="font-semibold w-32">Length of Stay</TableHead>
                 <TableHead className="font-semibold">Notes</TableHead>
                 <TableHead className="font-semibold text-right w-24">Actions</TableHead>
               </TableRow>
@@ -179,18 +182,21 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                     {getRegionName(visit.regionId)}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge className={cn("text-xs px-2 py-1", getRatingColor(visit.rating))}>
-                        {RATING_LABELS[visit.rating]}
-                      </Badge>
-                      <div className="flex items-center gap-1">
-                        {renderStars(visit.rating)}
-                        <span className="ml-1 text-xs text-gray-600">({visit.rating})</span>
-                      </div>
+                    <Badge className={cn("text-xs px-2 py-1", getRatingColor(visit.rating))}>
+                      {RATING_LABELS[visit.rating]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      {renderStars(visit.rating)}
+                      <span className="ml-1 text-xs text-gray-600">({visit.rating})</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {visit.visitDate?.toLocaleDateString() || '-'}
+                    {visit.visitYear || '-'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {visit.lengthOfStay || '-'}
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <p className="truncate text-sm text-gray-600" title={visit.notes}>

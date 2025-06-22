@@ -99,7 +99,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
 
       {/* Tooltip */}
       {hoveredRegion && (
-        <div className="absolute bottom-4 left-4 bg-black dark:bg-white text-white dark:text-black px-2 py-1 rounded text-sm pointer-events-none">
+        <div className="absolute bottom-4 right-4 bg-black/90 text-white px-3 py-2 rounded-lg text-base font-medium pointer-events-none shadow-lg">
           {hoveredRegion}
         </div>
       )}

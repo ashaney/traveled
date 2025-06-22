@@ -48,10 +48,7 @@ export function VisitStats() {
             <span className="text-sm font-medium text-gray-600">Last Visit</span>
           </div>
           <div className="text-lg font-bold">
-            {stats.lastVisit 
-              ? new Date(stats.lastVisit).toLocaleDateString() 
-              : 'None yet'
-            }
+            {stats.lastVisit || 'None yet'}
           </div>
         </CardContent>
       </Card>

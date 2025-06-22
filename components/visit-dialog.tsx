@@ -3,9 +3,14 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVisits } from '@/contexts/VisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
+import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VisitDialogProps {
@@ -16,7 +21,10 @@ interface VisitDialogProps {
 
 export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   const { getVisitByRegion, addVisit, updateVisit } = useVisits();
+  const [selectedType, setSelectedType] = useState<VisitRating>(0);
   const [selectedRating, setSelectedRating] = useState<VisitRating>(0);
+  const [visitYear, setVisitYear] = useState('');
+  const [lengthOfStay, setLengthOfStay] = useState('');
   const [notes, setNotes] = useState('');
 
   const region = japanPrefectures.regions.find(r => r.id === regionId);
@@ -25,10 +33,16 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   // Initialize form when dialog opens
   React.useEffect(() => {
     if (existingVisit) {
+      setSelectedType(existingVisit.rating);
       setSelectedRating(existingVisit.rating);
+      setVisitYear(existingVisit.visitYear?.toString() || '');
+      setLengthOfStay(existingVisit.lengthOfStay || '');
       setNotes(existingVisit.notes || '');
     } else {
+      setSelectedType(0);
       setSelectedRating(0);
+      setVisitYear('');
+      setLengthOfStay('');
       setNotes('');
     }
   }, [existingVisit]);
@@ -36,28 +50,47 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   const handleSave = () => {
     if (!regionId) return;
 
+    const visitData = {
+      rating: Number(selectedType) as VisitRating,
+      visitYear: visitYear ? parseInt(visitYear) : undefined,
+      lengthOfStay: lengthOfStay.trim() || undefined,
+      notes: notes.trim() || undefined,
+    };
+
     if (existingVisit) {
-      updateVisit(existingVisit.id, {
-        rating: Number(selectedRating) as VisitRating,
-        notes: notes.trim() || undefined,
-      });
+      updateVisit(existingVisit.id, visitData);
     } else {
-      addVisit(regionId, 'japan', Number(selectedRating) as VisitRating, notes.trim() || undefined);
+      addVisit(regionId, 'japan', visitData.rating, visitData.notes, undefined, visitData.visitYear, visitData.lengthOfStay);
     }
     
     onClose();
   };
 
-  const getRatingColor = (rating: VisitRating) => {
+  const getTypeColor = (type: VisitRating) => {
     const colors = {
-      0: "bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600",
-      1: "bg-red-200 dark:bg-red-900 border-red-300 dark:border-red-700",
-      2: "bg-orange-200 dark:bg-orange-900 border-orange-300 dark:border-orange-700",
-      3: "bg-yellow-200 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700",
-      4: "bg-green-200 dark:bg-green-900 border-green-300 dark:border-green-700",
-      5: "bg-blue-200 dark:bg-blue-900 border-blue-300 dark:border-blue-700"
+      0: "bg-gray-100 text-gray-700 border-gray-200",
+      1: "bg-red-100 text-red-700 border-red-200",
+      2: "bg-orange-100 text-orange-700 border-orange-200",
+      3: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      4: "bg-green-100 text-green-700 border-green-200",
+      5: "bg-blue-100 text-blue-700 border-blue-200"
     };
-    return colors[rating];
+    return colors[type];
+  };
+
+  const renderStars = (rating: VisitRating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Star 
+        key={i} 
+        className={cn(
+          "w-6 h-6 cursor-pointer transition-colors",
+          i < rating 
+            ? "fill-yellow-400 text-yellow-400" 
+            : "text-gray-300 hover:text-yellow-200"
+        )}
+        onClick={() => setSelectedRating((i + 1) as VisitRating)}
+      />
+    ));
   };
 
   if (!region) return null;
@@ -81,38 +114,76 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
 
         <div className="space-y-6">
           <div>
-            <h3 className="text-sm font-medium mb-3">Visit Rating</h3>
-            <div className="space-y-2">
-              {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((rating) => (
-                <button
-                  key={rating}
-                  className={cn(
-                    "w-full p-3 rounded-lg border-2 text-left transition-all duration-200",
-                    getRatingColor(rating),
-                    selectedRating === rating 
-                      ? "ring-2 ring-blue-500 dark:ring-blue-400" 
-                      : "hover:scale-[1.02]"
-                  )}
-                  onClick={() => setSelectedRating(rating)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{RATING_LABELS[rating]}</span>
-                    <span className="text-sm opacity-70">Level {rating}</span>
-                  </div>
-                </button>
-              ))}
+            <Label htmlFor="visitType" className="text-sm font-medium mb-2 block">
+              Visit Type
+            </Label>
+            <Select 
+              value={selectedType.toString()} 
+              onValueChange={(value) => setSelectedType(parseInt(value) as VisitRating)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select visit type" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((type) => (
+                  <SelectItem key={type} value={type.toString()}>
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-3 h-3 rounded", getTypeColor(type).split(' ')[0])} />
+                      {RATING_LABELS[type]}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium mb-2 block">
+              Rating
+            </Label>
+            <div className="flex items-center gap-1">
+              {renderStars(selectedRating)}
+              <span className="ml-2 text-sm text-gray-600">({selectedRating} star{selectedRating !== 1 ? 's' : ''})</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="visitYear" className="text-sm font-medium mb-2 block">
+                Year (optional)
+              </Label>
+              <Input
+                id="visitYear"
+                type="number"
+                value={visitYear}
+                onChange={(e) => setVisitYear(e.target.value)}
+                placeholder="e.g., 2023"
+                min="1900"
+                max={new Date().getFullYear()}
+              />
+            </div>
+            <div>
+              <Label htmlFor="lengthOfStay" className="text-sm font-medium mb-2 block">
+                Length of Stay (optional)
+              </Label>
+              <Input
+                id="lengthOfStay"
+                value={lengthOfStay}
+                onChange={(e) => setLengthOfStay(e.target.value)}
+                placeholder="e.g., 3 days, 2 weeks"
+              />
             </div>
           </div>
 
           <div>
-            <label htmlFor="notes" className="text-sm font-medium mb-2 block">
+            <Label htmlFor="notes" className="text-sm font-medium mb-2 block">
               Notes (optional)
-            </label>
-            <textarea
+            </Label>
+            <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full h-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="h-20 resize-none"
               placeholder="Add any notes about your visit..."
             />
           </div>
