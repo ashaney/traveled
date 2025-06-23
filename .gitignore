@@ -153,6 +153,8 @@ temp/
 
 # Supabase (may contain sensitive config)
 .supabase/
+supabase/migrations/
+supabase/*.sql
 
 # Development/planning files (may contain sensitive info)
 GOOGLE_OAUTH_SETUP.md
