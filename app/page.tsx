@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Globe } from "lucide-react";
+import { Globe, LogOut, User } from "lucide-react";
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
 import { VisitStats } from '@/components/visit-stats';
@@ -12,10 +15,20 @@ export default function Home() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('japan');
+  const { user, signOut, loading } = useAuth();
+  const { loading: visitsLoading } = useSupabaseVisits();
 
   const countries = {
     japan: { name: 'Japan', flag: '🇯🇵' },
   };
+
+  if (loading || visitsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   const handleRegionClick = (regionId: string) => {
     setSelectedRegion(regionId);
@@ -45,19 +58,29 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-gray-900">Traveled</h1>
             </div>
 
-            <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="japan">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🇯🇵</span>
-                    Japan
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User className="w-4 h-4" />
+                <span>{user?.email}</span>
+              </div>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="japan">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🇯🇵</span>
+                      Japan
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>

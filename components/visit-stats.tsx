@@ -2,24 +2,16 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useVisits } from '@/contexts/VisitsContext';
+import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { MapPin, Calendar, TrendingUp, Star } from 'lucide-react';
+import { MapPin, Calendar } from 'lucide-react';
 
 export function VisitStats() {
-  const { getStats } = useVisits();
+  const { getStats } = useSupabaseVisits();
   const stats = getStats('japan', japanPrefectures.regions.length);
   const progressPercentage = stats.percentageVisited;
 
-  const ratingColors = {
-    0: 'bg-gray-200',
-    1: 'bg-red-200',
-    2: 'bg-orange-200',
-    3: 'bg-yellow-200',
-    4: 'bg-green-200',
-    5: 'bg-blue-200'
-  };
 
   return (
     <div className="space-y-4">

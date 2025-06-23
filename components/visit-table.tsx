@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useVisits } from '@/contexts/VisitsContext';
+import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
 import { Trash2, Edit, Download, MapPin, Star } from 'lucide-react';
@@ -16,11 +16,11 @@ interface VisitTableProps {
 }
 
 export function VisitTable({ onEditVisit }: VisitTableProps) {
-  const { visits, deleteVisit } = useVisits();
+  const { visits, deleteVisit } = useSupabaseVisits();
   const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date'>('region');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const japanVisits = visits.filter(visit => visit.countryId === 'japan');
+  const japanVisits = visits.filter(visit => visit.country_id === 'japan');
 
   const getRegionName = (regionId: string) => {
     const region = japanPrefectures.regions.find(r => r.id === regionId);
@@ -60,14 +60,14 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
     
     switch (sortBy) {
       case 'region':
-        comparison = getRegionName(a.regionId).localeCompare(getRegionName(b.regionId));
+        comparison = getRegionName(a.region_id).localeCompare(getRegionName(b.region_id));
         break;
       case 'rating':
         comparison = a.rating - b.rating;
         break;
       case 'date':
-        const yearA = a.visitYear || 0;
-        const yearB = b.visitYear || 0;
+        const yearA = a.visit_year || 0;
+        const yearB = b.visit_year || 0;
         comparison = yearA - yearB;
         break;
     }
@@ -88,11 +88,11 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
     const csvData = [
       ['Prefecture', 'Type', 'Rating', 'Year', 'Length of Stay', 'Notes'],
       ...sortedVisits.map(visit => [
-        getRegionName(visit.regionId),
-        RATING_LABELS[visit.rating],
+        getRegionName(visit.region_id),
+        RATING_LABELS[visit.rating as VisitRating],
         visit.rating.toString(),
-        visit.visitYear?.toString() || '',
-        visit.lengthOfStay || '',
+        visit.visit_year?.toString() || '',
+        '', // length of stay removed
         visit.notes || ''
       ])
     ];
@@ -189,29 +189,29 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
               {sortedVisits.map((visit) => (
                 <TableRow key={visit.id} className="hover:bg-gray-50/50">
                   <TableCell className="font-medium">
-                    {getRegionName(visit.regionId)}
+                    {getRegionName(visit.region_id)}
                   </TableCell>
                   <TableCell>
-                    <Badge className={cn("text-xs px-2 py-1", getRatingColor(visit.rating))}>
-                      {RATING_LABELS[visit.rating]}
+                    <Badge className={cn("text-xs px-2 py-1", getRatingColor(visit.rating as VisitRating))}>
+                      {RATING_LABELS[visit.rating as VisitRating]}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {renderStars(visit.rating, visit.rating)}
+                      {renderStars(visit.rating as VisitRating, visit.rating as VisitRating)}
                       {![0, 1, 2].includes(visit.rating) && visit.rating > 0 && (
                         <span className="ml-1 text-xs text-gray-600">({visit.rating})</span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {visit.visitYear || '-'}
+                    {visit.visit_year || '-'}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {visit.lengthOfStay || '-'}
+                    {'-'}
                   </TableCell>
                   <TableCell className="max-w-xs">
-                    <p className="truncate text-sm text-gray-600" title={visit.notes}>
+                    <p className="truncate text-sm text-gray-600" title={visit.notes || undefined}>
                       {visit.notes || '-'}
                     </p>
                   </TableCell>
@@ -220,7 +220,7 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => onEditVisit?.(visit.regionId)}
+                        onClick={() => onEditVisit?.(visit.region_id)}
                         className="h-8 w-8 p-0"
                       >
                         <Edit className="w-3 h-3" />

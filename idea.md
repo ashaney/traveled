@@ -1,0 +1,19 @@
+  - Photo upload/gallery per visit
+  - Visit duration tracking (structured hours/days)
+  - Weather/season tracking
+  - Cost/budget tracking
+  - Travel companions tracking
+  - Transportation method tracking
+  - Favorite places/highlights within prefectures
+  - Visit goals/bucket list for unvisited areas
+  - Enhanced data export (JSON, PDF travel reports)
+  - Statistics dashboard with charts/graphs
+  - Map filtering by rating/type/year
+  - Prefecture search functionality
+  - Visit recommendations based on proximity
+  - Social sharing capabilities
+  - Dark/light theme toggle
+  - Visit anniversaries and reminders
+  - Support for multiple years - allow users to track multiple visits to the
+         same prefecture across different years
+- Remove length of stay field

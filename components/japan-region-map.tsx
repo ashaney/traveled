@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useVisits } from '@/contexts/VisitsContext';
+import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { RATING_COLORS, VisitRating } from '@/types';
 import { allRegionPaths, PrefecturePath } from '@/data/japan-svg-paths';
 
@@ -13,7 +13,7 @@ interface JapanRegionMapProps {
 }
 
 export function JapanRegionMap({ className, onRegionClick, selectedRegion }: JapanRegionMapProps) {
-  const { getVisitByRegion } = useVisits();
+  const { getVisitByRegion } = useSupabaseVisits();
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
 
   const getRegionColor = (regionId: string) => {
@@ -26,7 +26,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
     onRegionClick?.(regionId);
   };
 
-  const renderRegionPaths = (paths: PrefecturePath[], regionName: string) => {
+  const renderRegionPaths = (paths: PrefecturePath[]) => {
     return paths.map((prefecture) => (
       <path
         key={prefecture.id}
@@ -51,42 +51,42 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
         <g clipPath="url(#clip0_3_6)">
           {/* Kyushu Region */}
           <g data-region="kyushu">
-            {renderRegionPaths(allRegionPaths.kyushu, 'kyushu')}
+            {renderRegionPaths(allRegionPaths.kyushu)}
           </g>
 
           {/* Shikoku Region */}
           <g data-region="shikoku">
-            {renderRegionPaths(allRegionPaths.shikoku, 'shikoku')}
+            {renderRegionPaths(allRegionPaths.shikoku)}
           </g>
 
           {/* Chugoku Region */}
           <g data-region="chugoku">
-            {renderRegionPaths(allRegionPaths.chugoku, 'chugoku')}
+            {renderRegionPaths(allRegionPaths.chugoku)}
           </g>
 
           {/* Kansai Region */}
           <g data-region="kansai">
-            {renderRegionPaths(allRegionPaths.kansai, 'kansai')}
+            {renderRegionPaths(allRegionPaths.kansai)}
           </g>
 
           {/* Chubu Region */}
           <g data-region="chubu">
-            {renderRegionPaths(allRegionPaths.chubu, 'chubu')}
+            {renderRegionPaths(allRegionPaths.chubu)}
           </g>
 
           {/* Kanto Region */}
           <g data-region="kanto">
-            {renderRegionPaths(allRegionPaths.kanto, 'kanto')}
+            {renderRegionPaths(allRegionPaths.kanto)}
           </g>
 
           {/* Tohoku Region */}
           <g data-region="tohoku">
-            {renderRegionPaths(allRegionPaths.tohoku, 'tohoku')}
+            {renderRegionPaths(allRegionPaths.tohoku)}
           </g>
 
           {/* Hokkaido Region */}
           <g data-region="hokkaido">
-            {renderRegionPaths(allRegionPaths.hokkaido, 'hokkaido')}
+            {renderRegionPaths(allRegionPaths.hokkaido)}
           </g>
         </g>
 

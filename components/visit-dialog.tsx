@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useVisits } from '@/contexts/VisitsContext';
+import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
 import { Star } from 'lucide-react';
@@ -20,7 +20,7 @@ interface VisitDialogProps {
 }
 
 export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
-  const { getVisitByRegion, addVisit, updateVisit } = useVisits();
+  const { getVisitByRegion, addVisit, updateVisit } = useSupabaseVisits();
   const [selectedType, setSelectedType] = useState<VisitRating>(0);
   const [selectedRating, setSelectedRating] = useState<VisitRating>(0);
   const [visitYear, setVisitYear] = useState('');
@@ -33,10 +33,10 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   // Initialize form when dialog opens
   React.useEffect(() => {
     if (existingVisit) {
-      setSelectedType(existingVisit.rating);
-      setSelectedRating(existingVisit.rating);
-      setVisitYear(existingVisit.visitYear?.toString() || '');
-      setLengthOfStay(existingVisit.lengthOfStay || '');
+      setSelectedType(existingVisit.rating as VisitRating);
+      setSelectedRating(existingVisit.rating as VisitRating);
+      setVisitYear(existingVisit.visit_year?.toString() || '');
+      setLengthOfStay('');
       setNotes(existingVisit.notes || '');
     } else {
       setSelectedType(0);
@@ -60,15 +60,14 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
 
     const visitData = {
       rating: Number(selectedType) as VisitRating,
-      visitYear: visitYear ? parseInt(visitYear) : undefined,
-      lengthOfStay: lengthOfStay.trim() || undefined,
+      visit_year: visitYear ? parseInt(visitYear) : undefined,
       notes: notes.trim() || undefined,
     };
 
     if (existingVisit) {
       updateVisit(existingVisit.id, visitData);
     } else {
-      addVisit(regionId, 'japan', visitData.rating, visitData.notes, undefined, visitData.visitYear, visitData.lengthOfStay);
+      addVisit(regionId, 'japan', visitData.rating, visitData.notes, visitData.visit_year);
     }
     
     onClose();
