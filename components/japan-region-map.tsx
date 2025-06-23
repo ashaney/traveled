@@ -22,7 +22,7 @@ interface MapFilters {
 }
 
 export function JapanRegionMap({ className, onRegionClick, selectedRegion }: JapanRegionMapProps) {
-  const { getVisitByRegion, getVisitsByRegion, visits } = useSupabaseVisits();
+  const { getVisitByRegion, getHighestRatedVisitByRegion, getVisitsByRegion, visits } = useSupabaseVisits();
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -55,8 +55,8 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
       }
     }
     
-    // Default behavior - show most recent visit
-    const visit = getVisitByRegion(regionId);
+    // Default behavior - show highest-rated visit
+    const visit = getHighestRatedVisitByRegion(regionId);
     const rating = visit?.rating ?? 0;
     return RATING_COLORS[rating as VisitRating];
   };

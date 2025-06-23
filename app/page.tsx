@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { LogOut, User } from "lucide-react";
 import Image from 'next/image';
+import { motion, AnimatePresence } from "motion/react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +22,7 @@ export default function Home() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [managementModalOpen, setManagementModalOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('japan');
+  const [isUserHovered, setIsUserHovered] = useState(false);
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
 
@@ -60,39 +62,71 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50/30">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200/60 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            {/* Logo Section */}
+            <div className="flex items-center">
               <Image 
                 src="/logo_with_text.png" 
                 alt="Traveled" 
-                width={140}
-                height={37}
-                className="h-9 w-auto" 
+                width={189}
+                height={50}
+                className="h-12 w-auto" 
                 priority
               />
             </div>
 
+            {/* Right Section */}
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="w-4 h-4" />
-                <span>{user?.email}</span>
-              </div>
+              {/* Animated User Info */}
+              <motion.div 
+                className="hidden sm:flex items-center bg-gray-50 rounded-lg border h-10 overflow-hidden cursor-pointer"
+                onHoverStart={() => setIsUserHovered(true)}
+                onHoverEnd={() => setIsUserHovered(false)}
+                animate={{ width: isUserHovered ? "auto" : "40px" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              >
+                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-l-lg">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                <AnimatePresence>
+                  {isUserHovered && (
+                    <motion.div
+                      className="flex items-center h-full"
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <span className="text-sm font-medium text-gray-700 px-3 whitespace-nowrap">{user?.email}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Country Selector */}
               <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-40 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="japan">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <span className="text-lg">🇯🇵</span>
-                      Japan
+                      <span className="font-medium">Japan</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={signOut}>
+
+              {/* Sign Out Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={signOut}
+                className="h-10 px-4 border-gray-300 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-colors"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
                 Sign Out
               </Button>

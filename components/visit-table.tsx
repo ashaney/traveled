@@ -26,7 +26,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
 
   const japanVisits = visits.filter(visit => visit.country_id === 'japan');
 
-  // Get most recent visit per region
+  // Get most recent visit per region (for table display)
   const mostRecentVisitsPerRegion = new Map<string, typeof visits[0]>();
   japanVisits.forEach(visit => {
     const existing = mostRecentVisitsPerRegion.get(visit.region_id);

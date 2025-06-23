@@ -30,7 +30,7 @@ const sections: NavSection[] = [
 
 export function PageNav() {
   const [activeSection, setActiveSection] = useState('map-section');
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   useEffect(() => {
     const handleScroll = () => {

@@ -32,6 +32,7 @@ interface SupabaseVisitsContextType {
   updateVisit: (visitId: string, updates: Partial<VisitUpdate>) => Promise<void>
   deleteVisit: (visitId: string) => Promise<void>
   getVisitByRegion: (regionId: string, year?: number) => Visit | undefined
+  getHighestRatedVisitByRegion: (regionId: string) => Visit | undefined // Get highest-rated visit for a region
   getVisitsByRegion: (regionId: string) => Visit[] // Get all visits for a region
   getVisitsByCountry: (countryId: string) => Visit[]
   getStats: (countryId: string, totalRegions: number) => VisitStats
@@ -189,6 +190,13 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
       .sort((a, b) => b.visit_year - a.visit_year)[0]
   }, [visits])
 
+  const getHighestRatedVisitByRegion = useCallback((regionId: string): Visit | undefined => {
+    // Return the highest-rated visit for a region (for map colors and stats)
+    return visits
+      .filter(visit => visit.region_id === regionId)
+      .sort((a, b) => b.rating - a.rating)[0] // Highest rating first
+  }, [visits])
+
   const getVisitsByRegion = useCallback((regionId: string): Visit[] => {
     return visits
       .filter(visit => visit.region_id === regionId)
@@ -205,12 +213,12 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
     const actualVisits = countryVisits.filter(visit => visit.rating !== 0)
     const visitedRegions = new Set(actualVisits.map(visit => visit.region_id)).size
 
-    // For rating breakdown, use the most recent visit per region to avoid double counting
-    const mostRecentVisitPerRegion = new Map<string, Visit>()
+    // For rating breakdown, use the highest-rated visit per region to avoid double counting
+    const highestRatedVisitPerRegion = new Map<string, Visit>()
     countryVisits.forEach(visit => {
-      const existing = mostRecentVisitPerRegion.get(visit.region_id)
-      if (!existing || visit.visit_year > existing.visit_year) {
-        mostRecentVisitPerRegion.set(visit.region_id, visit)
+      const existing = highestRatedVisitPerRegion.get(visit.region_id)
+      if (!existing || visit.rating > existing.rating) {
+        highestRatedVisitPerRegion.set(visit.region_id, visit)
       }
     })
 
@@ -218,7 +226,7 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
       0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0
     }
 
-    mostRecentVisitPerRegion.forEach(visit => {
+    highestRatedVisitPerRegion.forEach(visit => {
       ratingBreakdown[visit.rating as VisitRating]++
     })
 
@@ -293,6 +301,7 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
       updateVisit,
       deleteVisit,
       getVisitByRegion,
+      getHighestRatedVisitByRegion,
       getVisitsByRegion,
       getVisitsByCountry,
       getStats,

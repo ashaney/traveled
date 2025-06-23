@@ -72,7 +72,7 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
     const newVisit: VisitEdit = {
       tempId: `new-${Date.now()}-${Math.random()}`, // Generate unique temp ID
       year: currentYear.toString(),
-      rating: 0,
+      rating: 1, // Default to "Passed through" instead of "Never been"
       notes: '',
       isNew: true
     };
@@ -318,7 +318,9 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((rating) => (
+                            {(Object.keys(RATING_LABELS) as unknown as VisitRating[])
+                              .filter(rating => rating !== 0) // Remove "Never been" option
+                              .map((rating) => (
                               <SelectItem key={rating} value={rating.toString()}>
                                 <div className="flex items-center gap-2">
                                   <div className={cn("w-3 h-3 rounded", getRatingColor(rating))} />
