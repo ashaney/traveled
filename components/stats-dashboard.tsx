@@ -230,9 +230,9 @@ export function StatsDashboard() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number, name: string, props: { payload: { name: string } }) => [
+                    formatter={(value: number, name: string) => [
                       `${value} prefecture${value !== 1 ? 's' : ''}`,
-                      props.payload.name
+                      name
                     ]}
                   />
                 </PieChart>
@@ -273,9 +273,9 @@ export function StatsDashboard() {
                 />
                 <YAxis tick={{ fontSize: 10 }} width={25} />
                 <Tooltip 
-                  formatter={(value: number, name: string, props: { payload: { fullName: string } }) => [
+                  formatter={(value: number, name: string) => [
                     `${value} prefecture${value !== 1 ? 's' : ''}`,
-                    props.payload.fullName
+                    name
                   ]}
                 />
                 <Bar dataKey="count">

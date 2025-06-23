@@ -87,7 +87,7 @@ export default function Home() {
                 onHoverEnd={() => !isCountryDropdownOpen && setIsCountryHovered(false)}
                 animate={{ width: (isCountryHovered || isCountryDropdownOpen) ? "auto" : "40px" }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                whileHover={{ shadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
               >
                 <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-l-lg">
                   <span className="text-lg">🇯🇵</span>
@@ -135,7 +135,7 @@ export default function Home() {
                 onHoverEnd={() => setIsUserHovered(false)}
                 animate={{ width: isUserHovered ? "auto" : "40px" }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                whileHover={{ shadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
               >
                 <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-l-lg">
                   <User className="w-4 h-4 text-blue-600" />
@@ -162,7 +162,7 @@ export default function Home() {
                 onHoverEnd={() => setIsSignOutHovered(false)}
                 animate={{ width: isSignOutHovered ? "auto" : "40px" }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                whileHover={{ shadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                 onClick={signOut}
               >
                 <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-l-lg">

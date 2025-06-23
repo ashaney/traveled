@@ -90,8 +90,7 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
           'japan',
           selectedType,
           year,
-          notes.trim() || undefined,
-          selectedRating > 0 ? selectedRating : undefined
+          notes.trim() || undefined
         );
       }
       onClose();
