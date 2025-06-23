@@ -76,6 +76,7 @@ export default function LoginPage() {
                 width={96}
                 height={96}
                 className="w-24 h-24 object-contain"
+                priority
               />
               <motion.div
                 className="absolute top-8 right-8"
