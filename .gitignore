@@ -142,3 +142,4 @@ temp/
 
 # Local development
 .vercel
+GOOGLE_OAUTH_SETUP.md
