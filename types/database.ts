@@ -81,9 +81,9 @@ export type Database = {
           country_id: string
           rating: number
           star_rating: number | null
-          visit_year: number | null
-          initial_visit_year: number | null
-          most_recent_visit_year: number | null
+          visit_year: number // Now required - each visit is for a specific year
+          initial_visit_year: number | null // Legacy field
+          most_recent_visit_year: number | null // Legacy field
           notes: string | null
           created_at: string
           updated_at: string
@@ -95,7 +95,7 @@ export type Database = {
           country_id: string
           rating: number
           star_rating?: number | null
-          visit_year?: number | null
+          visit_year: number // Required for new visits
           initial_visit_year?: number | null
           most_recent_visit_year?: number | null
           notes?: string | null
@@ -109,7 +109,7 @@ export type Database = {
           country_id?: string
           rating?: number
           star_rating?: number | null
-          visit_year?: number | null
+          visit_year?: number
           initial_visit_year?: number | null
           most_recent_visit_year?: number | null
           notes?: string | null

@@ -9,6 +9,9 @@ type Visit = Database['public']['Tables']['visits']['Row']
 type VisitInsert = Database['public']['Tables']['visits']['Insert']
 type VisitUpdate = Database['public']['Tables']['visits']['Update']
 type Region = Database['public']['Tables']['regions']['Row']
+type PrefectureRating = Database['public']['Tables']['prefecture_ratings']['Row']
+type PrefectureRatingInsert = Database['public']['Tables']['prefecture_ratings']['Insert']
+type PrefectureRatingUpdate = Database['public']['Tables']['prefecture_ratings']['Update']
 
 export type VisitRating = 0 | 1 | 2 | 3 | 4 | 5
 
@@ -23,14 +26,19 @@ export interface VisitStats {
 interface SupabaseVisitsContextType {
   visits: Visit[]
   regions: Region[]
+  prefectureRatings: PrefectureRating[]
   loading: boolean
-  addVisit: (regionId: string, countryId: string, rating: VisitRating, notes?: string, visitYear?: number) => Promise<void>
+  addVisit: (regionId: string, countryId: string, rating: VisitRating, visitYear: number, notes?: string) => Promise<void>
   updateVisit: (visitId: string, updates: Partial<VisitUpdate>) => Promise<void>
   deleteVisit: (visitId: string) => Promise<void>
   getVisitByRegion: (regionId: string, year?: number) => Visit | undefined
+  getVisitsByRegion: (regionId: string) => Visit[] // Get all visits for a region
   getVisitsByCountry: (countryId: string) => Visit[]
   getStats: (countryId: string, totalRegions: number) => VisitStats
   refreshVisits: () => Promise<void>
+  getPrefectureRating: (regionId: string, countryId: string) => number | undefined
+  setPrefectureRating: (regionId: string, countryId: string, starRating: number) => Promise<void>
+  deletePrefectureRating: (regionId: string, countryId: string) => Promise<void>
 }
 
 const SupabaseVisitsContext = createContext<SupabaseVisitsContextType | undefined>(undefined)
@@ -46,6 +54,7 @@ export function useSupabaseVisits() {
 export function SupabaseVisitsProvider({ children }: { children: React.ReactNode }) {
   const [visits, setVisits] = useState<Visit[]>([])
   const [regions, setRegions] = useState<Region[]>([])
+  const [prefectureRatings, setPrefectureRatings] = useState<PrefectureRating[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
   const supabase = createClient()
@@ -81,20 +90,31 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
   const refreshVisits = useCallback(async () => {
     if (!user) {
       setVisits([])
+      setPrefectureRatings([])
       return
     }
 
     try {
-      const { data, error } = await supabase
+      // Load visits
+      const { data: visitsData, error: visitsError } = await supabase
         .from('visits')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setVisits(data || [])
+      if (visitsError) throw visitsError
+      setVisits(visitsData || [])
+
+      // Load prefecture ratings
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('prefecture_ratings')
+        .select('*')
+        .eq('user_id', user.id)
+
+      if (ratingsError) throw ratingsError
+      setPrefectureRatings(ratingsData || [])
     } catch (error) {
-      console.error('Error loading visits:', error)
+      console.error('Error loading data:', error)
     }
   }, [user, supabase])
 
@@ -102,8 +122,8 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
     regionId: string, 
     countryId: string, 
     rating: VisitRating, 
-    notes?: string, 
-    visitYear?: number
+    visitYear: number,
+    notes?: string
   ) => {
     if (!user) throw new Error('User must be authenticated')
 
@@ -112,8 +132,8 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
       region_id: regionId,
       country_id: countryId,
       rating,
+      visit_year: visitYear,
       notes: notes || null,
-      visit_year: visitYear || null,
     }
 
     const { data, error } = await supabase
@@ -166,7 +186,13 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
     // Return most recent visit if no year specified
     return visits
       .filter(visit => visit.region_id === regionId)
-      .sort((a, b) => (b.visit_year || 0) - (a.visit_year || 0))[0]
+      .sort((a, b) => b.visit_year - a.visit_year)[0]
+  }, [visits])
+
+  const getVisitsByRegion = useCallback((regionId: string): Visit[] => {
+    return visits
+      .filter(visit => visit.region_id === regionId)
+      .sort((a, b) => b.visit_year - a.visit_year) // Most recent first
   }, [visits])
 
   const getVisitsByCountry = useCallback((countryId: string): Visit[] => {
@@ -179,17 +205,25 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
     const actualVisits = countryVisits.filter(visit => visit.rating !== 0)
     const visitedRegions = new Set(actualVisits.map(visit => visit.region_id)).size
 
+    // For rating breakdown, use the most recent visit per region to avoid double counting
+    const mostRecentVisitPerRegion = new Map<string, Visit>()
+    countryVisits.forEach(visit => {
+      const existing = mostRecentVisitPerRegion.get(visit.region_id)
+      if (!existing || visit.visit_year > existing.visit_year) {
+        mostRecentVisitPerRegion.set(visit.region_id, visit)
+      }
+    })
+
     const ratingBreakdown: Record<VisitRating, number> = {
       0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0
     }
 
-    countryVisits.forEach(visit => {
+    mostRecentVisitPerRegion.forEach(visit => {
       ratingBreakdown[visit.rating as VisitRating]++
     })
 
     const lastVisit = actualVisits
-      .filter(visit => visit.visit_year)
-      .sort((a, b) => (b.visit_year || 0) - (a.visit_year || 0))[0]?.visit_year
+      .sort((a, b) => b.visit_year - a.visit_year)[0]?.visit_year
 
     return {
       totalRegions,
@@ -200,18 +234,72 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
     }
   }, [getVisitsByCountry])
 
+  // Prefecture rating methods
+  const getPrefectureRating = useCallback((regionId: string, countryId: string): number | undefined => {
+    const rating = prefectureRatings.find(r => r.region_id === regionId && r.country_id === countryId)
+    return rating?.star_rating
+  }, [prefectureRatings])
+
+  const setPrefectureRating = useCallback(async (regionId: string, countryId: string, starRating: number) => {
+    if (!user) throw new Error('User must be authenticated')
+
+    const ratingData: PrefectureRatingInsert = {
+      user_id: user.id,
+      region_id: regionId,
+      country_id: countryId,
+      star_rating: starRating,
+    }
+
+    const { data, error } = await supabase
+      .from('prefecture_ratings')
+      .upsert(ratingData, { onConflict: 'user_id,region_id,country_id' })
+      .select()
+      .single()
+
+    if (error) throw error
+    
+    // Update local state
+    setPrefectureRatings(prev => {
+      const filtered = prev.filter(r => !(r.region_id === regionId && r.country_id === countryId))
+      return [...filtered, data]
+    })
+  }, [user, supabase])
+
+  const deletePrefectureRating = useCallback(async (regionId: string, countryId: string) => {
+    if (!user) throw new Error('User must be authenticated')
+
+    const { error } = await supabase
+      .from('prefecture_ratings')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('region_id', regionId)
+      .eq('country_id', countryId)
+
+    if (error) throw error
+    
+    // Update local state
+    setPrefectureRatings(prev => 
+      prev.filter(r => !(r.region_id === regionId && r.country_id === countryId))
+    )
+  }, [user, supabase])
+
   return (
     <SupabaseVisitsContext.Provider value={{
       visits,
       regions,
+      prefectureRatings,
       loading,
       addVisit,
       updateVisit,
       deleteVisit,
       getVisitByRegion,
+      getVisitsByRegion,
       getVisitsByCountry,
       getStats,
-      refreshVisits
+      refreshVisits,
+      getPrefectureRating,
+      setPrefectureRating,
+      deletePrefectureRating
     }}>
       {children}
     </SupabaseVisitsContext.Provider>

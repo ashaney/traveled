@@ -21,13 +21,18 @@ export interface Visit {
   regionId: string;
   countryId: string;
   rating: VisitRating;
-  visitYear?: number; // Legacy field
-  initialVisitYear?: number; // Year of first visit
-  mostRecentVisitYear?: number; // Year of most recent visit
-  lengthOfStay?: string; // e.g., "3 days", "2 weeks", "1 month"
+  visitYear: number; // Required year for the visit - each visit is for a specific year
   notes?: string;
-  photos?: string[];
-  duration?: number; // days
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PrefectureRating {
+  id: string;
+  userId: string;
+  regionId: string;
+  countryId: string;
+  starRating: number; // 1-5 star rating for the prefecture overall
   createdAt: Date;
   updatedAt: Date;
 }

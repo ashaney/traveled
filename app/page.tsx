@@ -11,10 +11,15 @@ import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
 import { VisitStats } from '@/components/visit-stats';
 import { VisitTable } from '@/components/visit-table';
+import { StatsDashboard } from '@/components/stats-dashboard';
+import { PageNav } from '@/components/page-nav';
+import { PrefectureManagementModal } from '@/components/prefecture-management-modal';
 
 export default function Home() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [selectedVisitId, setSelectedVisitId] = useState<string | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [managementModalOpen, setManagementModalOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('japan');
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
@@ -36,13 +41,19 @@ export default function Home() {
     setDialogOpen(true);
   };
 
-  const handleEditVisit = (regionId: string) => {
+  const handleManagePrefecture = (regionId: string) => {
     setSelectedRegion(regionId);
-    setDialogOpen(true);
+    setManagementModalOpen(true);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
+    setSelectedRegion(null);
+    setSelectedVisitId(undefined);
+  };
+  
+  const handleManagementModalClose = () => {
+    setManagementModalOpen(false);
     setSelectedRegion(null);
   };
 
@@ -91,11 +102,11 @@ export default function Home() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+        <div className="mb-8">
           {/* Main Content - Map */}
-          <div className="lg:col-span-4">
+          <div>
             {/* Japan Explorer Map */}
-            <section className="space-y-4">
+            <section id="map-section" className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900">
                   {countries[selectedCountry as keyof typeof countries].name} Explorer
@@ -140,25 +151,33 @@ export default function Home() {
               </div>
             </section>
           </div>
-
-          {/* Sidebar with Statistics */}
-          <div className="lg:col-span-1">
-            <div className="h-fit">
-              <VisitStats />
-            </div>
-          </div>
         </div>
 
+        {/* Statistics Dashboard - Full Width */}
+        <section id="stats-section" className="mb-8">
+          <StatsDashboard />
+        </section>
+
         {/* Visit Records Table - Full Width */}
-        <section>
-          <VisitTable onEditVisit={handleEditVisit} />
+        <section id="table-section">
+          <VisitTable onManagePrefecture={handleManagePrefecture} />
         </section>
       </div>
+
+      {/* Page Navigation */}
+      <PageNav />
 
       <VisitDialog 
         regionId={selectedRegion}
         open={dialogOpen}
         onClose={handleDialogClose}
+        editVisitId={selectedVisitId}
+      />
+      
+      <PrefectureManagementModal 
+        regionId={selectedRegion}
+        open={managementModalOpen}
+        onClose={handleManagementModalClose}
       />
     </div>
   );

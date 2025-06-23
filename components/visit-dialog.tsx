@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,45 +10,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { Star } from 'lucide-react';
+import { Star, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VisitDialogProps {
   regionId: string | null;
   open: boolean;
   onClose: () => void;
+  editVisitId?: string; // If provided, edit this specific visit
 }
 
-export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
-  const { getVisitByRegion, addVisit, updateVisit } = useSupabaseVisits();
+export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialogProps) {
+  const { getVisitsByRegion, addVisit, updateVisit, visits } = useSupabaseVisits();
   const [selectedType, setSelectedType] = useState<VisitRating>(0);
   const [selectedRating, setSelectedRating] = useState<VisitRating>(0);
-  const [initialVisitYear, setInitialVisitYear] = useState('');
-  const [mostRecentVisitYear, setMostRecentVisitYear] = useState('');
+  const [visitYear, setVisitYear] = useState('');
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState('');
 
   const region = japanPrefectures.regions.find(r => r.id === regionId);
-  const existingVisit = regionId ? getVisitByRegion(regionId) : null;
+  const regionVisits = regionId ? getVisitsByRegion(regionId) : [];
+  const existingVisit = editVisitId ? visits.find(v => v.id === editVisitId) : null;
+  const isEditing = Boolean(existingVisit);
 
   // Initialize form when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (existingVisit) {
+      // Editing existing visit
       setSelectedType(existingVisit.rating as VisitRating);
       setSelectedRating((existingVisit.star_rating || 0) as VisitRating);
-      setInitialVisitYear(existingVisit.initial_visit_year?.toString() || existingVisit.visit_year?.toString() || '');
-      setMostRecentVisitYear(existingVisit.most_recent_visit_year?.toString() || existingVisit.visit_year?.toString() || '');
+      setVisitYear(existingVisit.visit_year?.toString() || new Date().getFullYear().toString());
       setNotes(existingVisit.notes || '');
     } else {
+      // Creating new visit
       setSelectedType(0);
       setSelectedRating(0);
-      setInitialVisitYear('');
-      setMostRecentVisitYear('');
+      setVisitYear(new Date().getFullYear().toString()); // Default to current year
       setNotes('');
     }
-  }, [existingVisit]);
+    setError('');
+  }, [existingVisit, open]);
 
   // Auto-set rating to 0 for N/A visit types, preserve existing ratings for others
-  React.useEffect(() => {
+  useEffect(() => {
     const showNAForTypes = [0, 1, 2];
     if (showNAForTypes.includes(selectedType)) {
       setSelectedRating(0);
@@ -58,25 +62,42 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
     }
   }, [selectedType, existingVisit]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!regionId) return;
-
-    const visitData = {
-      rating: Number(selectedType) as VisitRating,
-      star_rating: selectedRating > 0 ? selectedRating : undefined,
-      initial_visit_year: initialVisitYear ? parseInt(initialVisitYear) : undefined,
-      most_recent_visit_year: mostRecentVisitYear ? parseInt(mostRecentVisitYear) : undefined,
-      visit_year: initialVisitYear ? parseInt(initialVisitYear) : undefined, // Keep for backward compatibility
-      notes: notes.trim() || undefined,
-    };
-
-    if (existingVisit) {
-      updateVisit(existingVisit.id, visitData);
-    } else {
-      addVisit(regionId, 'japan', visitData.rating, visitData.notes, visitData.visit_year);
-    }
     
-    onClose();
+    setError('');
+    
+    // Validate year
+    const year = parseInt(visitYear);
+    if (!year || year < 1900 || year > new Date().getFullYear() + 10) {
+      setError('Please enter a valid year between 1900 and ' + (new Date().getFullYear() + 10));
+      return;
+    }
+
+    try {
+      if (existingVisit) {
+        // Update existing visit
+        await updateVisit(existingVisit.id, {
+          rating: selectedType,
+          star_rating: selectedRating > 0 ? selectedRating : null,
+          visit_year: year,
+          notes: notes.trim() || null,
+        });
+      } else {
+        // Create new visit
+        await addVisit(
+          regionId,
+          'japan',
+          selectedType,
+          year,
+          notes.trim() || undefined,
+          selectedRating > 0 ? selectedRating : undefined
+        );
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
   };
 
   const getTypeColor = (type: VisitRating) => {
@@ -143,14 +164,49 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
             )}
           </DialogTitle>
           <DialogDescription>
-            Record your visit to {region.name} with a rating and optional notes.
+            {isEditing ? 'Edit your visit' : 'Record a new visit'} to {region.name} with a rating and optional notes.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Show existing visits for context when adding new */}
+          {!isEditing && regionVisits.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                Previous visits:
+              </h4>
+              <div className="space-y-1">
+                {regionVisits.map(visit => (
+                  <div key={visit.id} className="text-sm text-blue-800">
+                    {visit.visit_year}: {RATING_LABELS[visit.rating as VisitRating]}
+                    {visit.star_rating && ` (${visit.star_rating} star${visit.star_rating !== 1 ? 's' : ''})`}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="visitYear" className="text-sm font-medium mb-2 block">
+              Visit Year <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="visitYear"
+              type="number"
+              value={visitYear}
+              onChange={(e) => setVisitYear(e.target.value)}
+              placeholder="e.g., 2024"
+              min="1900"
+              max={new Date().getFullYear() + 10}
+              required
+              className={error.includes('year') ? 'border-red-500' : ''}
+            />
+          </div>
+
           <div>
             <Label htmlFor="visitType" className="text-sm font-medium mb-2 block">
-              Visit Type
+              Visit Type <span className="text-red-500">*</span>
             </Label>
             <Select 
               value={selectedType.toString()} 
@@ -184,43 +240,6 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="initialVisitYear" className="text-sm font-medium mb-2 block">
-                Initial Visit Year (optional)
-              </Label>
-              <Input
-                id="initialVisitYear"
-                type="number"
-                value={initialVisitYear}
-                onChange={(e) => {
-                  setInitialVisitYear(e.target.value);
-                  // Auto-set most recent to same year if it's empty or less than initial
-                  if (!mostRecentVisitYear || (e.target.value && parseInt(e.target.value) > parseInt(mostRecentVisitYear))) {
-                    setMostRecentVisitYear(e.target.value);
-                  }
-                }}
-                placeholder="e.g., 2020"
-                min="1900"
-                max={new Date().getFullYear()}
-              />
-            </div>
-            <div>
-              <Label htmlFor="mostRecentVisitYear" className="text-sm font-medium mb-2 block">
-                Most Recent Visit (optional)
-              </Label>
-              <Input
-                id="mostRecentVisitYear"
-                type="number"
-                value={mostRecentVisitYear}
-                onChange={(e) => setMostRecentVisitYear(e.target.value)}
-                placeholder="e.g., 2024"
-                min={initialVisitYear || "1900"}
-                max={new Date().getFullYear()}
-              />
-            </div>
-          </div>
-
           <div>
             <Label htmlFor="notes" className="text-sm font-medium mb-2 block">
               Notes (optional)
@@ -234,12 +253,18 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
             />
           </div>
 
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
+              {error}
+            </div>
+          )}
+
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button onClick={handleSave}>
-              {existingVisit ? 'Update' : 'Save'} Visit
+              {isEditing ? 'Update' : 'Save'} Visit
             </Button>
           </div>
         </div>

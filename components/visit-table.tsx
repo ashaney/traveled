@@ -10,15 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { Trash2, Edit, Download, MapPin, Star, Search, Filter } from 'lucide-react';
+import { Trash2, Download, MapPin, Star, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VisitTableProps {
-  onEditVisit?: (regionId: string) => void;
+  onManagePrefecture?: (regionId: string) => void;
 }
 
-export function VisitTable({ onEditVisit }: VisitTableProps) {
-  const { visits, deleteVisit } = useSupabaseVisits();
+export function VisitTable({ onManagePrefecture }: VisitTableProps) {
+  const { visits, deleteVisit, getVisitsByRegion, getPrefectureRating } = useSupabaseVisits();
   const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'type'>('region');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,9 +26,25 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
 
   const japanVisits = visits.filter(visit => visit.country_id === 'japan');
 
+  // Get most recent visit per region
+  const mostRecentVisitsPerRegion = new Map<string, typeof visits[0]>();
+  japanVisits.forEach(visit => {
+    const existing = mostRecentVisitsPerRegion.get(visit.region_id);
+    if (!existing || visit.visit_year > existing.visit_year) {
+      mostRecentVisitsPerRegion.set(visit.region_id, visit);
+    }
+  });
+  
+  const mostRecentVisits = Array.from(mostRecentVisitsPerRegion.values());
+
   const getRegionName = (regionId: string) => {
     const region = japanPrefectures.regions.find(r => r.id === regionId);
     return region?.name || regionId;
+  };
+  
+  // Get prefecture star rating from the prefecture_ratings table
+  const getPrefectureStarRating = (regionId: string) => {
+    return getPrefectureRating(regionId, 'japan') || 0;
   };
 
   const getRatingColor = (rating: VisitRating) => {
@@ -60,7 +76,7 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
   };
 
   // Filter visits based on search and type filter
-  const filteredVisits = japanVisits.filter(visit => {
+  const filteredVisits = mostRecentVisits.filter(visit => {
     const regionName = getRegionName(visit.region_id).toLowerCase();
     const matchesSearch = regionName.includes(searchTerm.toLowerCase()) || 
                          (visit.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
@@ -82,9 +98,7 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
         comparison = a.rating - b.rating; // Same as rating for now
         break;
       case 'date':
-        const yearA = a.most_recent_visit_year || a.visit_year || 0;
-        const yearB = b.most_recent_visit_year || b.visit_year || 0;
-        comparison = yearA - yearB;
+        comparison = a.visit_year - b.visit_year;
         break;
     }
     
@@ -102,13 +116,13 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
 
   const exportData = () => {
     const csvData = [
-      ['Prefecture', 'Type', 'Rating', 'Initial Visit', 'Most Recent', 'Notes'],
+      ['Prefecture', 'Type', 'Rating', 'Visit Year', 'Star Rating', 'Notes'],
       ...sortedVisits.map(visit => [
         getRegionName(visit.region_id),
         RATING_LABELS[visit.rating as VisitRating],
         visit.rating.toString(),
-        (visit.initial_visit_year || visit.visit_year)?.toString() || '',
-        (visit.most_recent_visit_year || visit.visit_year)?.toString() || '',
+        visit.visit_year.toString(),
+        visit.star_rating?.toString() || '',
         visit.notes || ''
       ])
     ];
@@ -126,7 +140,7 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
     URL.revokeObjectURL(url);
   };
 
-  if (japanVisits.length === 0) {
+  if (mostRecentVisits.length === 0) {
     return (
       <Card className="border-0 shadow-sm">
         <CardHeader>
@@ -229,21 +243,27 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                   className="font-semibold w-28 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('date')}
                 >
-                  Initial Visit
+                  Most Recent Visit
                   {sortBy === 'date' && (
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
-                <TableHead className="font-semibold w-32">Most Recent</TableHead>
                 <TableHead className="font-semibold">Notes</TableHead>
                 <TableHead className="font-semibold text-right w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedVisits.map((visit) => (
-                <TableRow key={visit.id} className="hover:bg-gray-50/50">
+              {sortedVisits.map((visit) => {
+                const overallRating = getPrefectureStarRating(visit.region_id);
+                return (
+                <TableRow key={visit.region_id} className="hover:bg-gray-50/50">
                   <TableCell className="font-medium">
-                    {getRegionName(visit.region_id)}
+                    <button
+                      onClick={() => onManagePrefecture?.(visit.region_id)}
+                      className="text-gray-900 hover:text-blue-600 hover:underline font-medium text-left"
+                    >
+                      {getRegionName(visit.region_id)}
+                    </button>
                   </TableCell>
                   <TableCell>
                     <Badge className={cn("text-xs px-2 py-1", getRatingColor(visit.rating as VisitRating))}>
@@ -252,17 +272,14 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {renderStars(visit.star_rating, visit.rating as VisitRating)}
-                      {![0, 1, 2].includes(visit.rating) && visit.star_rating && visit.star_rating > 0 && (
-                        <span className="ml-1 text-xs text-gray-600">({visit.star_rating})</span>
+                      {renderStars(overallRating, visit.rating as VisitRating)}
+                      {![0, 1, 2].includes(visit.rating) && overallRating > 0 && (
+                        <span className="ml-1 text-xs text-gray-600">({overallRating})</span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {visit.initial_visit_year || visit.visit_year || '-'}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {visit.most_recent_visit_year || visit.visit_year || '-'}
+                  <TableCell className="text-sm font-medium">
+                    {visit.visit_year}
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <p className="truncate text-sm text-gray-600" title={visit.notes || undefined}>
@@ -270,27 +287,18 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                     </p>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => onEditVisit?.(visit.region_id)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => deleteVisit(visit.id)}
-                        className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => deleteVisit(visit.id)}
+                      className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                      title="Delete most recent visit"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )})}
             </TableBody>
             </Table>
           </div>
