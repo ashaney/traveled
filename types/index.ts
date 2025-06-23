@@ -21,7 +21,9 @@ export interface Visit {
   regionId: string;
   countryId: string;
   rating: VisitRating;
-  visitYear?: number;
+  visitYear?: number; // Legacy field
+  initialVisitYear?: number; // Year of first visit
+  mostRecentVisitYear?: number; // Year of most recent visit
   lengthOfStay?: string; // e.g., "3 days", "2 weeks", "1 month"
   notes?: string;
   photos?: string[];

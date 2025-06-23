@@ -80,7 +80,10 @@ export type Database = {
           region_id: string
           country_id: string
           rating: number
+          star_rating: number | null
           visit_year: number | null
+          initial_visit_year: number | null
+          most_recent_visit_year: number | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -91,7 +94,10 @@ export type Database = {
           region_id: string
           country_id: string
           rating: number
+          star_rating?: number | null
           visit_year?: number | null
+          initial_visit_year?: number | null
+          most_recent_visit_year?: number | null
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -102,7 +108,10 @@ export type Database = {
           region_id?: string
           country_id?: string
           rating?: number
+          star_rating?: number | null
           visit_year?: number | null
+          initial_visit_year?: number | null
+          most_recent_visit_year?: number | null
           notes?: string | null
           created_at?: string
           updated_at?: string

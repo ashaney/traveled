@@ -23,8 +23,8 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   const { getVisitByRegion, addVisit, updateVisit } = useSupabaseVisits();
   const [selectedType, setSelectedType] = useState<VisitRating>(0);
   const [selectedRating, setSelectedRating] = useState<VisitRating>(0);
-  const [visitYear, setVisitYear] = useState('');
-  const [lengthOfStay, setLengthOfStay] = useState('');
+  const [initialVisitYear, setInitialVisitYear] = useState('');
+  const [mostRecentVisitYear, setMostRecentVisitYear] = useState('');
   const [notes, setNotes] = useState('');
 
   const region = japanPrefectures.regions.find(r => r.id === regionId);
@@ -34,33 +34,39 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
   React.useEffect(() => {
     if (existingVisit) {
       setSelectedType(existingVisit.rating as VisitRating);
-      setSelectedRating(existingVisit.rating as VisitRating);
-      setVisitYear(existingVisit.visit_year?.toString() || '');
-      setLengthOfStay('');
+      setSelectedRating((existingVisit.star_rating || 0) as VisitRating);
+      setInitialVisitYear(existingVisit.initial_visit_year?.toString() || existingVisit.visit_year?.toString() || '');
+      setMostRecentVisitYear(existingVisit.most_recent_visit_year?.toString() || existingVisit.visit_year?.toString() || '');
       setNotes(existingVisit.notes || '');
     } else {
       setSelectedType(0);
       setSelectedRating(0);
-      setVisitYear('');
-      setLengthOfStay('');
+      setInitialVisitYear('');
+      setMostRecentVisitYear('');
       setNotes('');
     }
   }, [existingVisit]);
 
-  // Auto-set rating to 0 for N/A visit types
+  // Auto-set rating to 0 for N/A visit types, preserve existing ratings for others
   React.useEffect(() => {
     const showNAForTypes = [0, 1, 2];
     if (showNAForTypes.includes(selectedType)) {
       setSelectedRating(0);
+    } else if (!existingVisit) {
+      // Only reset to 0 for new visits when switching to rating-eligible types
+      setSelectedRating(0);
     }
-  }, [selectedType]);
+  }, [selectedType, existingVisit]);
 
   const handleSave = () => {
     if (!regionId) return;
 
     const visitData = {
       rating: Number(selectedType) as VisitRating,
-      visit_year: visitYear ? parseInt(visitYear) : undefined,
+      star_rating: selectedRating > 0 ? selectedRating : undefined,
+      initial_visit_year: initialVisitYear ? parseInt(initialVisitYear) : undefined,
+      most_recent_visit_year: mostRecentVisitYear ? parseInt(mostRecentVisitYear) : undefined,
+      visit_year: initialVisitYear ? parseInt(initialVisitYear) : undefined, // Keep for backward compatibility
       notes: notes.trim() || undefined,
     };
 
@@ -180,28 +186,37 @@ export function VisitDialog({ regionId, open, onClose }: VisitDialogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="visitYear" className="text-sm font-medium mb-2 block">
-                Year (optional)
+              <Label htmlFor="initialVisitYear" className="text-sm font-medium mb-2 block">
+                Initial Visit Year (optional)
               </Label>
               <Input
-                id="visitYear"
+                id="initialVisitYear"
                 type="number"
-                value={visitYear}
-                onChange={(e) => setVisitYear(e.target.value)}
-                placeholder="e.g., 2023"
+                value={initialVisitYear}
+                onChange={(e) => {
+                  setInitialVisitYear(e.target.value);
+                  // Auto-set most recent to same year if it's empty or less than initial
+                  if (!mostRecentVisitYear || (e.target.value && parseInt(e.target.value) > parseInt(mostRecentVisitYear))) {
+                    setMostRecentVisitYear(e.target.value);
+                  }
+                }}
+                placeholder="e.g., 2020"
                 min="1900"
                 max={new Date().getFullYear()}
               />
             </div>
             <div>
-              <Label htmlFor="lengthOfStay" className="text-sm font-medium mb-2 block">
-                Length of Stay (optional)
+              <Label htmlFor="mostRecentVisitYear" className="text-sm font-medium mb-2 block">
+                Most Recent Visit (optional)
               </Label>
               <Input
-                id="lengthOfStay"
-                value={lengthOfStay}
-                onChange={(e) => setLengthOfStay(e.target.value)}
-                placeholder="e.g., 3 days, 2 weeks"
+                id="mostRecentVisitYear"
+                type="number"
+                value={mostRecentVisitYear}
+                onChange={(e) => setMostRecentVisitYear(e.target.value)}
+                placeholder="e.g., 2024"
+                min={initialVisitYear || "1900"}
+                max={new Date().getFullYear()}
               />
             </div>
           </div>

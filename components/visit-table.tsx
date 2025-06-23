@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { Trash2, Edit, Download, MapPin, Star } from 'lucide-react';
+import { Trash2, Edit, Download, MapPin, Star, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VisitTableProps {
@@ -17,8 +19,10 @@ interface VisitTableProps {
 
 export function VisitTable({ onEditVisit }: VisitTableProps) {
   const { visits, deleteVisit } = useSupabaseVisits();
-  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date'>('region');
+  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'type'>('region');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
 
   const japanVisits = visits.filter(visit => visit.country_id === 'japan');
 
@@ -39,23 +43,32 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
     return colors[rating];
   };
 
-  const renderStars = (rating: VisitRating, visitType: VisitRating) => {
+  const renderStars = (starRating: number | null, visitType: VisitRating) => {
     // For types 0 (Never been), 1 (Passed through), 2 (Brief stop), show N/A
     const showNAForTypes = [0, 1, 2];
     if (showNAForTypes.includes(visitType)) {
       return <span className="text-xs text-gray-500 italic">N/A</span>;
     }
     
-    if (rating === 0) {
+    if (!starRating || starRating === 0) {
       return <span className="text-xs text-gray-500 italic">None</span>;
     }
     
     return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} className={`w-3 h-3 ${i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+      <Star key={i} className={`w-3 h-3 ${i < starRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
     ));
   };
 
-  const sortedVisits = [...japanVisits].sort((a, b) => {
+  // Filter visits based on search and type filter
+  const filteredVisits = japanVisits.filter(visit => {
+    const regionName = getRegionName(visit.region_id).toLowerCase();
+    const matchesSearch = regionName.includes(searchTerm.toLowerCase()) || 
+                         (visit.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+    const matchesType = filterType === 'all' || visit.rating.toString() === filterType;
+    return matchesSearch && matchesType;
+  });
+
+  const sortedVisits = [...filteredVisits].sort((a, b) => {
     let comparison = 0;
     
     switch (sortBy) {
@@ -65,9 +78,12 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
       case 'rating':
         comparison = a.rating - b.rating;
         break;
+      case 'type':
+        comparison = a.rating - b.rating; // Same as rating for now
+        break;
       case 'date':
-        const yearA = a.visit_year || 0;
-        const yearB = b.visit_year || 0;
+        const yearA = a.most_recent_visit_year || a.visit_year || 0;
+        const yearB = b.most_recent_visit_year || b.visit_year || 0;
         comparison = yearA - yearB;
         break;
     }
@@ -75,7 +91,7 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const handleSort = (column: 'region' | 'rating' | 'date') => {
+  const handleSort = (column: 'region' | 'rating' | 'date' | 'type') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -86,13 +102,13 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
 
   const exportData = () => {
     const csvData = [
-      ['Prefecture', 'Type', 'Rating', 'Year', 'Length of Stay', 'Notes'],
+      ['Prefecture', 'Type', 'Rating', 'Initial Visit', 'Most Recent', 'Notes'],
       ...sortedVisits.map(visit => [
         getRegionName(visit.region_id),
         RATING_LABELS[visit.rating as VisitRating],
         visit.rating.toString(),
-        visit.visit_year?.toString() || '',
-        '', // length of stay removed
+        (visit.initial_visit_year || visit.visit_year)?.toString() || '',
+        (visit.most_recent_visit_year || visit.visit_year)?.toString() || '',
         visit.notes || ''
       ])
     ];
@@ -133,7 +149,7 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <CardTitle className="flex items-center gap-2">
             <div className="p-2 bg-blue-100 rounded-lg">
               <MapPin className="w-5 h-5 text-blue-600" />
@@ -145,11 +161,41 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
             Export CSV
           </Button>
         </div>
+        
+        {/* Search and Filter Controls */}
+        <div className="flex gap-4 items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search prefectures or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-600" />
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((rating) => (
+                  <SelectItem key={rating} value={rating.toString()}>
+                    {RATING_LABELS[rating]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent>
         <div className="rounded-lg border overflow-hidden">
-          <Table>
+          <div className="overflow-y-auto max-h-96" style={{ scrollbarGutter: 'stable' }}>
+            <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50">
                 <TableHead 
@@ -161,7 +207,15 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
-                <TableHead className="font-semibold w-40">Type</TableHead>
+                <TableHead 
+                  className="font-semibold w-40 cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleSort('type')}
+                >
+                  Type
+                  {sortBy === 'type' && (
+                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </TableHead>
                 <TableHead 
                   className="font-semibold w-48 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('rating')}
@@ -172,20 +226,20 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-24 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-28 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('date')}
                 >
-                  Year
+                  Initial Visit
                   {sortBy === 'date' && (
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
-                <TableHead className="font-semibold w-32">Length of Stay</TableHead>
+                <TableHead className="font-semibold w-32">Most Recent</TableHead>
                 <TableHead className="font-semibold">Notes</TableHead>
                 <TableHead className="font-semibold text-right w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
-          <TableBody>
+            <TableBody>
               {sortedVisits.map((visit) => (
                 <TableRow key={visit.id} className="hover:bg-gray-50/50">
                   <TableCell className="font-medium">
@@ -198,17 +252,17 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {renderStars(visit.rating as VisitRating, visit.rating as VisitRating)}
-                      {![0, 1, 2].includes(visit.rating) && visit.rating > 0 && (
-                        <span className="ml-1 text-xs text-gray-600">({visit.rating})</span>
+                      {renderStars(visit.star_rating, visit.rating as VisitRating)}
+                      {![0, 1, 2].includes(visit.rating) && visit.star_rating && visit.star_rating > 0 && (
+                        <span className="ml-1 text-xs text-gray-600">({visit.star_rating})</span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {visit.visit_year || '-'}
+                    {visit.initial_visit_year || visit.visit_year || '-'}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {'-'}
+                    {visit.most_recent_visit_year || visit.visit_year || '-'}
                   </TableCell>
                   <TableCell className="max-w-xs">
                     <p className="truncate text-sm text-gray-600" title={visit.notes || undefined}>
@@ -238,7 +292,8 @@ export function VisitTable({ onEditVisit }: VisitTableProps) {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </div>
 
         {sortedVisits.length === 0 && (

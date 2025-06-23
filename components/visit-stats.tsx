@@ -5,12 +5,17 @@ import { Progress } from '@/components/ui/progress';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { MapPin, Calendar } from 'lucide-react';
+import { MapPin, Calendar, Trophy } from 'lucide-react';
 
 export function VisitStats() {
-  const { getStats } = useSupabaseVisits();
+  const { getStats, visits } = useSupabaseVisits();
   const stats = getStats('japan', japanPrefectures.regions.length);
   const progressPercentage = stats.percentageVisited;
+  
+  // Calculate total score from all visit types (exclude 0 = Never been)
+  const totalScore = visits
+    .filter(visit => visit.country_id === 'japan' && visit.rating > 0)
+    .reduce((sum, visit) => sum + visit.rating, 0);
 
 
   return (
@@ -30,6 +35,21 @@ export function VisitStats() {
             {stats.visitedRegions} of {stats.totalRegions} prefectures
           </p>
           <Progress value={progressPercentage} className="h-2" />
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-yellow-600" />
+              <span className="text-sm font-medium text-gray-600">Total Score</span>
+            </div>
+            <span className="text-lg font-bold">{totalScore}</span>
+          </div>
+          <p className="text-xs text-gray-600">
+            Sum of all visit types
+          </p>
         </CardContent>
       </Card>
 
