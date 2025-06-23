@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Globe, LogOut, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,10 +53,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Globe className="w-6 h-6 text-blue-600" />
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900">Traveled</h1>
+              <Image 
+                src="/img/logo_with_text.png" 
+                alt="Traveled" 
+                width={140}
+                height={37}
+                className="h-9 w-auto" 
+                priority
+              />
             </div>
 
             <div className="flex items-center gap-4">
