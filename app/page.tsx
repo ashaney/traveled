@@ -4,13 +4,11 @@ import { useState } from 'react';
 import { LogOut, User } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
-import { VisitStats } from '@/components/visit-stats';
 import { VisitTable } from '@/components/visit-table';
 import { StatsDashboard } from '@/components/stats-dashboard';
 import { PageNav } from '@/components/page-nav';
@@ -23,6 +21,9 @@ export default function Home() {
   const [managementModalOpen, setManagementModalOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('japan');
   const [isUserHovered, setIsUserHovered] = useState(false);
+  const [isCountryHovered, setIsCountryHovered] = useState(false);
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [isSignOutHovered, setIsSignOutHovered] = useState(false);
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
 
@@ -62,9 +63,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50/30">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200/60 shadow-sm">
+      <div className="bg-gradient-to-r from-white via-white to-gray-50/30 border-b border-gray-200/60 shadow-sm backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
+          <div className="flex items-center justify-between py-5">
             {/* Logo Section */}
             <div className="flex items-center">
               <Image 
@@ -78,14 +79,63 @@ export default function Home() {
             </div>
 
             {/* Right Section */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {/* Animated Country Selector */}
+              <motion.div
+                className="relative flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm"
+                onHoverStart={() => setIsCountryHovered(true)}
+                onHoverEnd={() => !isCountryDropdownOpen && setIsCountryHovered(false)}
+                animate={{ width: (isCountryHovered || isCountryDropdownOpen) ? "auto" : "40px" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                whileHover={{ shadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+              >
+                <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-l-lg">
+                  <span className="text-lg">🇯🇵</span>
+                </div>
+                <AnimatePresence>
+                  {(isCountryHovered || isCountryDropdownOpen) && (
+                    <motion.div
+                      className="flex items-center h-full"
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <Select 
+                        value={selectedCountry} 
+                        onValueChange={setSelectedCountry}
+                        onOpenChange={(open) => {
+                          setIsCountryDropdownOpen(open);
+                          if (!open && !isCountryHovered) {
+                            setIsCountryHovered(false);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="border-0 bg-transparent shadow-none focus:ring-0 px-3 h-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="japan">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg">🇯🇵</span>
+                              <span className="font-medium">Japan</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
               {/* Animated User Info */}
               <motion.div 
-                className="hidden sm:flex items-center bg-gray-50 rounded-lg border h-10 overflow-hidden cursor-pointer"
+                className="hidden sm:flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm"
                 onHoverStart={() => setIsUserHovered(true)}
                 onHoverEnd={() => setIsUserHovered(false)}
                 animate={{ width: isUserHovered ? "auto" : "40px" }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
+                whileHover={{ shadow: "0 4px 12px rgba(0,0,0,0.1)" }}
               >
                 <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-l-lg">
                   <User className="w-4 h-4 text-blue-600" />
@@ -105,31 +155,33 @@ export default function Home() {
                 </AnimatePresence>
               </motion.div>
 
-              {/* Country Selector */}
-              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                <SelectTrigger className="w-40 h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="japan">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">🇯🇵</span>
-                      <span className="font-medium">Japan</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Sign Out Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
+              {/* Animated Sign Out Button */}
+              <motion.div
+                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm"
+                onHoverStart={() => setIsSignOutHovered(true)}
+                onHoverEnd={() => setIsSignOutHovered(false)}
+                animate={{ width: isSignOutHovered ? "auto" : "40px" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                whileHover={{ shadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                 onClick={signOut}
-                className="h-10 px-4 border-gray-300 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-colors"
               >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </Button>
+                <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-l-lg">
+                  <LogOut className="w-4 h-4 text-red-600" />
+                </div>
+                <AnimatePresence>
+                  {isSignOutHovered && (
+                    <motion.div
+                      className="flex items-center h-full"
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <span className="text-sm font-medium text-red-600 px-3 whitespace-nowrap">Sign Out</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             </div>
           </div>
         </div>

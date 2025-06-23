@@ -35,18 +35,26 @@ export function PageNav() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 100; // Simple offset
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
       
       let currentSection = sections[0].id; // Default to first section
       
-      // Find the section that's currently visible
-      for (const section of sections) {
-        const element = document.getElementById(section.id);
-        if (element) {
-          const { offsetTop } = element;
-          
-          // If we're past the start of this section, it becomes the current section
-          if (scrollPosition >= offsetTop) {
-            currentSection = section.id;
+      // Check if we're at the bottom of the page
+      if (scrollPosition + windowHeight >= documentHeight - 50) {
+        // If at bottom, set to last section
+        currentSection = sections[sections.length - 1].id;
+      } else {
+        // Find the section that's currently visible
+        for (const section of sections) {
+          const element = document.getElementById(section.id);
+          if (element) {
+            const { offsetTop } = element;
+            
+            // If we're past the start of this section, it becomes the current section
+            if (scrollPosition >= offsetTop) {
+              currentSection = section.id;
+            }
           }
         }
       }

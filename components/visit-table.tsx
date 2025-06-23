@@ -18,8 +18,8 @@ interface VisitTableProps {
 }
 
 export function VisitTable({ onManagePrefecture }: VisitTableProps) {
-  const { visits, deleteVisit, getVisitsByRegion, getPrefectureRating } = useSupabaseVisits();
-  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'type'>('region');
+  const { visits, deleteVisit, getPrefectureRating, getVisitsByRegion } = useSupabaseVisits();
+  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'type' | 'visits'>('region');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -100,12 +100,17 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
       case 'date':
         comparison = a.visit_year - b.visit_year;
         break;
+      case 'visits':
+        const aVisitCount = getVisitsByRegion(a.region_id).length;
+        const bVisitCount = getVisitsByRegion(b.region_id).length;
+        comparison = aVisitCount - bVisitCount;
+        break;
     }
     
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const handleSort = (column: 'region' | 'rating' | 'date' | 'type') => {
+  const handleSort = (column: 'region' | 'rating' | 'date' | 'type' | 'visits') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -116,14 +121,13 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
 
   const exportData = () => {
     const csvData = [
-      ['Prefecture', 'Type', 'Rating', 'Visit Year', 'Star Rating', 'Notes'],
+      ['Prefecture', 'Type', '# Visits', 'Rating', 'Visit Year'],
       ...sortedVisits.map(visit => [
         getRegionName(visit.region_id),
         RATING_LABELS[visit.rating as VisitRating],
-        visit.rating.toString(),
-        visit.visit_year.toString(),
-        visit.star_rating?.toString() || '',
-        visit.notes || ''
+        getVisitsByRegion(visit.region_id).length.toString(),
+        getPrefectureStarRating(visit.region_id).toString(),
+        visit.visit_year.toString()
       ])
     ];
 
@@ -213,7 +217,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
             <TableHeader>
               <TableRow className="bg-gray-50/50">
                 <TableHead 
-                  className="font-semibold w-40 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-36 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('region')}
                 >
                   Prefecture
@@ -222,7 +226,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-40 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('type')}
                 >
                   Type
@@ -231,7 +235,16 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-48 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-20 text-center cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleSort('visits')}
+                >
+                  # Visits
+                  {sortBy === 'visits' && (
+                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </TableHead>
+                <TableHead 
+                  className="font-semibold w-36 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('rating')}
                 >
                   Rating
@@ -240,16 +253,15 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-28 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-32 text-center cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('date')}
                 >
-                  Most Recent Visit
+                  Most Recent
                   {sortBy === 'date' && (
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
-                <TableHead className="font-semibold">Notes</TableHead>
-                <TableHead className="font-semibold text-right w-24">Actions</TableHead>
+                <TableHead className="font-semibold text-right w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -270,6 +282,9 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                       {RATING_LABELS[visit.rating as VisitRating]}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-sm font-medium text-center">
+                    {getVisitsByRegion(visit.region_id).length}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       {renderStars(overallRating, visit.rating as VisitRating)}
@@ -278,13 +293,8 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm font-medium">
+                  <TableCell className="text-sm font-medium text-center">
                     {visit.visit_year}
-                  </TableCell>
-                  <TableCell className="max-w-xs">
-                    <p className="truncate text-sm text-gray-600" title={visit.notes || undefined}>
-                      {visit.notes || '-'}
-                    </p>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button 

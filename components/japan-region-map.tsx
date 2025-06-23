@@ -22,7 +22,7 @@ interface MapFilters {
 }
 
 export function JapanRegionMap({ className, onRegionClick, selectedRegion }: JapanRegionMapProps) {
-  const { getVisitByRegion, getHighestRatedVisitByRegion, getVisitsByRegion, visits } = useSupabaseVisits();
+  const { getHighestRatedVisitByRegion, getVisitsByRegion, visits } = useSupabaseVisits();
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);

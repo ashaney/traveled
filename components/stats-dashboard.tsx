@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, RATING_COLORS, VisitRating } from '@/types';
-import { MapPin, Calendar, Trophy, TrendingUp, BarChart3 } from 'lucide-react';
+import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
 
 export function StatsDashboard() {
@@ -70,6 +70,39 @@ export function StatsDashboard() {
     cumulativeData.push({ year: yearData.year, total: runningTotal });
   });
 
+  // Calculate most visited prefecture
+  const visitCounts = japanVisits
+    .filter(visit => visit.rating > 0)
+    .reduce((acc, visit) => {
+      acc[visit.region_id] = (acc[visit.region_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+  const mostVisitedEntry = Object.entries(visitCounts)
+    .sort(([,a], [,b]) => b - a)[0];
+  
+  const mostVisitedPrefecture = mostVisitedEntry ? {
+    name: japanPrefectures.regions.find(r => r.id === mostVisitedEntry[0])?.name || mostVisitedEntry[0],
+    count: mostVisitedEntry[1]
+  } : null;
+
+  // Calculate exploration rate (prefectures visited this year vs total)
+  const currentYear = new Date().getFullYear();
+  const visitsThisYear = japanVisits.filter(visit => 
+    visit.rating > 0 && visit.visit_year === currentYear
+  ).length;
+
+  // Calculate best score (highest rating per prefecture, counted once)
+  const bestScoreByPrefecture = japanVisits
+    .filter(visit => visit.rating > 0)
+    .reduce((acc, visit) => {
+      const currentBest = acc[visit.region_id] || 0;
+      acc[visit.region_id] = Math.max(currentBest, visit.rating);
+      return acc;
+    }, {} as Record<string, number>);
+  
+  const bestScore = Object.values(bestScoreByPrefecture).reduce((sum, rating) => sum + rating, 0);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
@@ -77,81 +110,118 @@ export function StatsDashboard() {
         <h2 className="text-2xl font-bold text-gray-900">Travel Analytics</h2>
       </div>
 
-      {/* Key Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid - 3x3 Layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Progress */}
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-gray-600">Progress</span>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-green-600" />
+                <span className="text-xs font-medium text-gray-600">Progress</span>
               </div>
-              <span className="text-2xl font-bold text-green-600">{stats.percentageVisited}%</span>
+              <span className="text-lg font-bold text-green-600">{stats.percentageVisited}%</span>
             </div>
-            <p className="text-xs text-gray-600 mb-2">
-              {stats.visitedRegions} of {stats.totalRegions} prefectures
+            <p className="text-xs text-gray-600 mb-1">
+              {stats.visitedRegions} of {stats.totalRegions}
             </p>
-            <Progress value={stats.percentageVisited} className="h-2" />
+            <Progress value={stats.percentageVisited} className="h-1" />
           </CardContent>
         </Card>
 
+        {/* Total Score */}
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-yellow-600" />
-                <span className="text-sm font-medium text-gray-600">Total Score</span>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1">
+                <Trophy className="h-3 w-3 text-yellow-600" />
+                <span className="text-xs font-medium text-gray-600">Total Score</span>
               </div>
-              <span className="text-2xl font-bold text-yellow-600">{totalScore}</span>
+              <span className="text-lg font-bold text-yellow-600">{totalScore}</span>
             </div>
             <p className="text-xs text-gray-600">
-              Avg: {averageRating.toFixed(1)} per visit
+              Avg: {averageRating.toFixed(1)}
             </p>
           </CardContent>
         </Card>
 
+        {/* Best Score */}
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-gray-600">Last Visit</span>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1">
+                <Crown className="h-3 w-3 text-orange-600" />
+                <span className="text-xs font-medium text-gray-600">Best Score</span>
+              </div>
+              <span className="text-lg font-bold text-orange-600">{bestScore}</span>
             </div>
-            <div className="text-2xl font-bold text-purple-600">
-              {stats.lastVisit || 'None yet'}
+            <p className="text-xs text-gray-600">
+              Peak rating per prefecture
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Total Visits */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1 mb-1">
+              <TrendingUp className="h-3 w-3 text-blue-600" />
+              <span className="text-xs font-medium text-gray-600">Total Visits</span>
+            </div>
+            <div className="text-lg font-bold text-blue-600">
+              {japanVisits.filter(v => v.rating > 0).length}
             </div>
           </CardContent>
         </Card>
 
+        {/* This Year */}
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-600">Total Visits</span>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1 mb-1">
+              <Calendar className="h-3 w-3 text-purple-600" />
+              <span className="text-xs font-medium text-gray-600">This Year</span>
             </div>
-            <div className="text-2xl font-bold text-blue-600">
-              {japanVisits.filter(v => v.rating > 0).length}
+            <div className="text-lg font-bold text-purple-600">
+              {visitsThisYear}
             </div>
+            <p className="text-xs text-gray-600">visits in {currentYear}</p>
+          </CardContent>
+        </Card>
+
+        {/* Most Visited Prefecture */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1 mb-1">
+              <Repeat className="h-3 w-3 text-emerald-600" />
+              <span className="text-xs font-medium text-gray-600">Most Visited</span>
+            </div>
+            <div className="text-sm font-bold text-emerald-600 truncate">
+              {mostVisitedPrefecture?.name || 'None yet'}
+            </div>
+            <p className="text-xs text-gray-600">
+              {mostVisitedPrefecture ? `${mostVisitedPrefecture.count} visits` : '0 visits'}
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Visit Types Pie Chart */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Visit Types Distribution</CardTitle>
+            <CardTitle className="text-base">Visit Types</CardTitle>
           </CardHeader>
           <CardContent>
             {visitTypeData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
                     data={visitTypeData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
+                    innerRadius={40}
+                    outerRadius={80}
                     paddingAngle={2}
                     dataKey="value"
                   >
@@ -168,7 +238,7 @@ export function StatsDashboard() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-gray-500">
+              <div className="h-[200px] flex items-center justify-center text-gray-500">
                 No visit data yet
               </div>
             )}
@@ -190,20 +260,18 @@ export function StatsDashboard() {
         {/* Rating Distribution Bar Chart */}
         <Card className="border-0 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg">Rating Distribution</CardTitle>
+            <CardTitle className="text-base">Ratings</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={ratingDistribution}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={ratingDistribution} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="name" 
-                  tick={{ fontSize: 12 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  tick={{ fontSize: 10 }}
+                  height={30}
                 />
-                <YAxis />
+                <YAxis tick={{ fontSize: 10 }} width={25} />
                 <Tooltip 
                   formatter={(value: number, name: string, props: { payload: { fullName: string } }) => [
                     `${value} prefecture${value !== 1 ? 's' : ''}`,
@@ -219,22 +287,19 @@ export function StatsDashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Timeline Charts */}
-      {yearlyData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Visits per Year */}
+        {/* Visits by Year - Third chart */}
+        {yearlyData.length > 0 && (
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Visits by Year</CardTitle>
+              <CardTitle className="text-base">By Year</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={yearlyData}>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={yearlyData} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" />
-                  <YAxis />
+                  <XAxis dataKey="year" tick={{ fontSize: 10 }} height={30} />
+                  <YAxis tick={{ fontSize: 10 }} width={25} />
                   <Tooltip 
                     formatter={(value: number, name: string) => [
                       `${value} visit${value !== 1 ? 's' : ''}`,
@@ -245,28 +310,34 @@ export function StatsDashboard() {
                     type="monotone" 
                     dataKey="visits" 
                     stroke="#3b82f6" 
+                    strokeWidth={2}
                     fill="#3b82f6" 
-                    fillOpacity={0.3}
+                    fillOpacity={0.6}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="newPrefectures" 
                     stroke="#10b981" 
+                    strokeWidth={2}
                     fill="#10b981" 
-                    fillOpacity={0.3}
+                    fillOpacity={0.4}
                   />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        )}
+      </div>
 
-          {/* Cumulative Progress */}
+      {/* Additional Timeline Chart - if more than 3 years of data */}
+      {yearlyData.length > 2 && (
+        <div className="grid grid-cols-1 gap-4">
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Cumulative Prefecture Count</CardTitle>
+              <CardTitle className="text-base">Cumulative Progress</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={cumulativeData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="year" />
@@ -281,8 +352,8 @@ export function StatsDashboard() {
                     type="monotone" 
                     dataKey="total" 
                     stroke="#8b5cf6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                    strokeWidth={2}
+                    dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 3 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -290,39 +361,6 @@ export function StatsDashboard() {
           </Card>
         </div>
       )}
-
-      {/* Visit Types Breakdown Table */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Detailed Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(Object.keys(RATING_LABELS) as unknown as VisitRating[])
-              .map((rating) => (
-                <div 
-                  key={rating} 
-                  className="flex justify-between items-center p-3 rounded-lg border"
-                  style={{ backgroundColor: RATING_COLORS[rating] + '20' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded" 
-                      style={{ backgroundColor: RATING_COLORS[rating] }}
-                    />
-                    <span className="text-sm font-medium">{RATING_LABELS[rating]}</span>
-                  </div>
-                  <span className="text-lg font-bold">{stats.ratingBreakdown[rating]}</span>
-                </div>
-              ))}
-            {stats.visitedRegions === 0 && (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                Start exploring to see your statistics!
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

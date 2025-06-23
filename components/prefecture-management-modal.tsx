@@ -191,38 +191,6 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
     return colors[rating];
   };
 
-  const renderStars = (rating: number, onChange: (rating: number) => void, visitType: VisitRating) => {
-    // For types 0 (Never been), 1 (Passed through), 2 (Brief stop), don't show ratings
-    const showNAForTypes = [0, 1, 2];
-    if (showNAForTypes.includes(visitType)) {
-      return <span className="text-xs text-gray-500 italic">N/A</span>;
-    }
-    
-    return (
-      <div className="flex items-center gap-1">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Star 
-            key={i} 
-            className={cn(
-              "w-4 h-4 cursor-pointer transition-colors",
-              i < rating 
-                ? "fill-yellow-400 text-yellow-400" 
-                : "text-gray-300 hover:text-yellow-200"
-            )}
-            onClick={() => onChange(i + 1)}
-          />
-        ))}
-        {rating > 0 && (
-          <button
-            onClick={() => onChange(0)}
-            className="ml-1 text-xs text-gray-500 hover:text-gray-700 underline"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-    );
-  };
 
   if (!region) return null;
 
@@ -292,7 +260,7 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
                 {visits.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                      No visits recorded yet. Click "Add Visit" to get started!
+                      No visits recorded yet. Click &quot;Add Visit&quot; to get started!
                     </TableCell>
                   </TableRow>
                 ) : (
