@@ -156,7 +156,7 @@ export function StatsDashboard() {
               <span className="text-lg font-bold text-orange-600">{bestScore}</span>
             </div>
             <p className="text-xs text-gray-600">
-              Peak rating per prefecture
+              Peak score per prefecture
             </p>
           </CardContent>
         </Card>
