@@ -71,7 +71,7 @@ export default function LoginPage() {
                 transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
               />
               <Image 
-                src="/img/logo_only.png" 
+                src="/logo_only.png" 
                 alt="Traveled Logo" 
                 width={96}
                 height={96}
@@ -131,7 +131,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
                 <Image 
-                  src="/img/logo_with_text.png" 
+                  src="/logo_with_text.png" 
                   alt="Traveled" 
                   width={160}
                   height={42}

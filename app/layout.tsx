@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   title: "Traveled - Track Your Adventures",
   description: "A modern travel tracking app to visualize and record your journeys around the world",
   icons: {
-    icon: '/img/logo_only.png',
-    shortcut: '/img/logo_only.png',
-    apple: '/img/logo_only.png',
+    icon: '/logo_only.png',
+    shortcut: '/logo_only.png',
+    apple: '/logo_only.png',
   },
 };
 
