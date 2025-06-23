@@ -142,4 +142,42 @@ temp/
 
 # Local development
 .vercel
+
+# Environment files (CRITICAL - contains secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+
+# Supabase (may contain sensitive config)
+.supabase/
+
+# Development/planning files (may contain sensitive info)
 GOOGLE_OAUTH_SETUP.md
+plan.md
+idea.md
+
+# Bun lockfile (can contain private registry info)
+bun.lockb
+
+# Additional IDE files
+*.sublime-*
+.history/
+.ionide/
+
+# Database backups
+*.sql.backup
+*.dump
+
+# SSL certificates
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Local storage/cache
+.turbo/
+.rush/
