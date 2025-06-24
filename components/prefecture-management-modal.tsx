@@ -289,7 +289,7 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
                           </SelectTrigger>
                           <SelectContent>
                             {(Object.keys(RATING_LABELS) as unknown as VisitRating[])
-                              .filter(rating => rating !== 0) // Remove "Never been" option
+                              .filter(rating => parseInt(rating.toString()) !== 0) // Remove "Never been" option
                               .map((rating) => (
                               <SelectItem key={rating} value={rating.toString()}>
                                 <div className="flex items-center gap-2">

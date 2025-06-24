@@ -40,8 +40,8 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
       setVisitYear(existingVisit.visit_year?.toString() || new Date().getFullYear().toString());
       setNotes(existingVisit.notes || '');
     } else {
-      // Creating new visit
-      setSelectedType(0);
+      // Creating new visit - default to "Passed through" instead of "Never been"
+      setSelectedType(1);
       setVisitYear(new Date().getFullYear().toString()); // Default to current year
       setNotes('');
     }
@@ -164,7 +164,9 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
                 <SelectValue placeholder="Select visit type" />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((type) => (
+                {(Object.keys(RATING_LABELS) as unknown as VisitRating[])
+                  .filter(type => parseInt(type.toString()) !== 0) // Remove "Never been" option
+                  .map((type) => (
                   <SelectItem key={type} value={type.toString()}>
                     <div className="flex items-center gap-2">
                       <div className={cn("w-3 h-3 rounded", getTypeColor(type).split(' ')[0])} />

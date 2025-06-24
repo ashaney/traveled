@@ -446,7 +446,7 @@ export function StatsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {regionTracker.map((region, index) => (
+              {regionTracker.map((region) => (
                 <div key={region.region} className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 w-16">
