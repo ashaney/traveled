@@ -9,13 +9,11 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTheme } from '@/contexts/ThemeContext'
 
 export default function LoginPage() {
   const supabase = createClient()
   const router = useRouter()
   const { user, loading } = useAuth()
-  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
     if (user) {
@@ -34,7 +32,7 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="light min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
@@ -45,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="light min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
         {/* Left side - Branding and illustration */}
         <motion.div
@@ -135,7 +133,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
                 <Image 
-                  src={resolvedTheme === 'dark' ? '/logo_with_text_dark.png' : '/logo_with_text.png'}
+                  src="/logo_with_text.png"
                   alt="Traveled" 
                   width={353}
                   height={92}
