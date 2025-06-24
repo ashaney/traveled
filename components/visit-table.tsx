@@ -19,10 +19,11 @@ interface VisitTableProps {
 
 export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   const { visits, deleteVisit, getPrefectureRating, getVisitsByRegion } = useSupabaseVisits();
-  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'type' | 'visits'>('region');
+  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'recentType' | 'highestType' | 'visits'>('region');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterTarget, setFilterTarget] = useState<'recent' | 'highest'>('recent');
 
   const japanVisits = visits.filter(visit => visit.country_id === 'japan');
 
@@ -45,6 +46,13 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   // Get prefecture star rating from the prefecture_ratings table
   const getPrefectureStarRating = (regionId: string) => {
     return getPrefectureRating(regionId, 'japan') || 0;
+  };
+
+  // Get highest visit type per region
+  const getHighestVisitType = (regionId: string) => {
+    const regionVisits = getVisitsByRegion(regionId).filter(visit => visit.rating > 0);
+    if (regionVisits.length === 0) return 0;
+    return Math.max(...regionVisits.map(visit => visit.rating));
   };
 
   const getRatingColor = (rating: VisitRating) => {
@@ -80,7 +88,17 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
     const regionName = getRegionName(visit.region_id).toLowerCase();
     const matchesSearch = regionName.includes(searchTerm.toLowerCase()) || 
                          (visit.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    const matchesType = filterType === 'all' || visit.rating.toString() === filterType;
+    
+    let matchesType = true;
+    if (filterType !== 'all') {
+      if (filterTarget === 'recent') {
+        matchesType = visit.rating.toString() === filterType;
+      } else {
+        const highestType = getHighestVisitType(visit.region_id);
+        matchesType = highestType.toString() === filterType;
+      }
+    }
+    
     return matchesSearch && matchesType;
   });
 
@@ -94,8 +112,13 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
       case 'rating':
         comparison = a.rating - b.rating;
         break;
-      case 'type':
-        comparison = a.rating - b.rating; // Same as rating for now
+      case 'recentType':
+        comparison = a.rating - b.rating;
+        break;
+      case 'highestType':
+        const aHighest = getHighestVisitType(a.region_id);
+        const bHighest = getHighestVisitType(b.region_id);
+        comparison = aHighest - bHighest;
         break;
       case 'date':
         comparison = a.visit_year - b.visit_year;
@@ -110,7 +133,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const handleSort = (column: 'region' | 'rating' | 'date' | 'type' | 'visits') => {
+  const handleSort = (column: 'region' | 'rating' | 'date' | 'recentType' | 'highestType' | 'visits') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -121,10 +144,11 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
 
   const exportData = () => {
     const csvData = [
-      ['Prefecture', 'Type', '# Visits', 'Rating', 'Visit Year'],
+      ['Prefecture', 'Most Recent Type', 'Highest Type', '# Visits', 'Rating', 'Visit Year'],
       ...sortedVisits.map(visit => [
         getRegionName(visit.region_id),
         RATING_LABELS[visit.rating as VisitRating],
+        RATING_LABELS[getHighestVisitType(visit.region_id) as VisitRating],
         getVisitsByRegion(visit.region_id).length.toString(),
         getPrefectureStarRating(visit.region_id).toString(),
         visit.visit_year.toString()
@@ -167,21 +191,15 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <div className="flex items-center justify-between mb-4">
-          <CardTitle className="flex items-center gap-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MapPin className="w-5 h-5 text-blue-600" />
-            </div>
-            Visit Records
-          </CardTitle>
-          <Button onClick={exportData} variant="outline" size="sm" className="gap-2">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
-        </div>
+        <CardTitle className="flex items-center gap-2 mb-4">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <MapPin className="w-5 h-5 text-blue-600" />
+          </div>
+          Visit Records
+        </CardTitle>
         
         {/* Search and Filter Controls */}
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -192,20 +210,35 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-600" />
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((rating) => (
-                  <SelectItem key={rating} value={rating.toString()}>
-                    {RATING_LABELS[rating]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-gray-600" />
+              <Select value={filterTarget} onValueChange={(value: 'recent' | 'highest') => setFilterTarget(value)}>
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Recent</SelectItem>
+                  <SelectItem value="highest">Highest</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map((rating) => (
+                    <SelectItem key={rating} value={rating.toString()}>
+                      {RATING_LABELS[rating]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={exportData} variant="outline" size="sm" className="gap-2">
+              <Download className="w-4 h-4" />
+              Export CSV
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -227,10 +260,19 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                 </TableHead>
                 <TableHead 
                   className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
-                  onClick={() => handleSort('type')}
+                  onClick={() => handleSort('recentType')}
                 >
-                  Type
-                  {sortBy === 'type' && (
+                  Most Recent Type
+                  {sortBy === 'recentType' && (
+                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </TableHead>
+                <TableHead 
+                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleSort('highestType')}
+                >
+                  Highest Type
+                  {sortBy === 'highestType' && (
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
@@ -280,6 +322,11 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   <TableCell>
                     <Badge className={cn("text-xs px-2 py-1", getRatingColor(visit.rating as VisitRating))}>
                       {RATING_LABELS[visit.rating as VisitRating]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={cn("text-xs px-2 py-1", getRatingColor(getHighestVisitType(visit.region_id) as VisitRating))}>
+                      {RATING_LABELS[getHighestVisitType(visit.region_id) as VisitRating]}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm font-medium text-center">
