@@ -349,8 +349,8 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      {renderStars(overallRating, visit.rating as VisitRating)}
-                      {![0, 1, 2].includes(visit.rating) && overallRating > 0 && (
+                      {renderStars(overallRating, getHighestVisitType(visit.region_id) as VisitRating)}
+                      {![0, 1, 2].includes(getHighestVisitType(visit.region_id)) && overallRating > 0 && (
                         <span className="ml-1 text-xs text-gray-600">({overallRating})</span>
                       )}
                     </div>
