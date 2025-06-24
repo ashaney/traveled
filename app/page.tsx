@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LogOut, User, MapPin } from "lucide-react";
+import { LogOut, User, MapPin, Table } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -191,7 +191,7 @@ export default function Home() {
             {/* Explore the Map */}
             <section id="map-section" className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <MapPin className="w-6 h-6 text-green-600" />
+                <MapPin className="w-6 h-6 text-blue-600" />
                 <h2 className="text-2xl font-bold text-gray-900">Explore the Map</h2>
               </div>
               <div className="flex items-center justify-between">
@@ -244,6 +244,10 @@ export default function Home() {
 
         {/* Visit Records Table - Full Width */}
         <section id="table-section">
+          <div className="flex items-center gap-2 mb-6">
+            <Table className="w-6 h-6 text-blue-600" />
+            <h2 className="text-2xl font-bold text-gray-900">Visit Records</h2>
+          </div>
           <VisitTable onManagePrefecture={handleManagePrefecture} />
         </section>
       </div>

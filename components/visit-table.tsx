@@ -191,13 +191,6 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 mb-4">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <MapPin className="w-5 h-5 text-blue-600" />
-          </div>
-          Visit Records
-        </CardTitle>
-        
         {/* Search and Filter Controls */}
         <div className="flex gap-4 items-center justify-between">
           <div className="relative flex-1 max-w-sm">
