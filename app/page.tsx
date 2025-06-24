@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { LogOut, User, MapPin, Table } from "lucide-react";
+import { useState, useCallback } from 'react';
+import { LogOut, User, MapPin, Table, ExternalLink } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
+import confetti from 'canvas-confetti';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
@@ -24,17 +25,56 @@ export default function Home() {
   const [isCountryHovered, setIsCountryHovered] = useState(false);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isSignOutHovered, setIsSignOutHovered] = useState(false);
+  const [logoClickCount, setLogoClickCount] = useState(0);
+  const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
 
-
-  if (loading || visitsLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
+  const handleLogoClick = useCallback(() => {
+    const newCount = logoClickCount + 1;
+    setLogoClickCount(newCount);
+    
+    if (newCount === 5) {
+      // Trigger confetti
+      const duration = 3000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+      
+      function randomInRange(min: number, max: number) {
+        return Math.random() * (max - min) + min;
+      }
+      
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+        
+        const particleCount = 50 * (timeLeft / duration);
+        
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        });
+      }, 250);
+      
+      // Show easter egg message
+      setShowEasterEgg(true);
+      
+      // Hide easter egg after 5 seconds
+      setTimeout(() => {
+        setShowEasterEgg(false);
+        setLogoClickCount(0);
+      }, 5000);
+    }
+  }, [logoClickCount]);
 
   const handleRegionClick = (regionId: string) => {
     setSelectedRegion(regionId);
@@ -57,6 +97,14 @@ export default function Home() {
     setSelectedRegion(null);
   };
 
+  if (loading || visitsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50/30">
       {/* Header */}
@@ -68,10 +116,11 @@ export default function Home() {
               <Image 
                 src="/logo_with_text.png" 
                 alt="Traveled" 
-                width={189}
-                height={50}
-                className="h-12 w-auto" 
+                width={208}
+                height={55}
+                className="h-14 w-auto cursor-pointer transition-transform hover:scale-105" 
                 priority
+                onClick={handleLogoClick}
               />
             </div>
 
@@ -254,6 +303,44 @@ export default function Home() {
 
       {/* Page Navigation */}
       <PageNav />
+      
+      {/* Easter Egg */}
+      <AnimatePresence>
+        {showEasterEgg && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="fixed bottom-8 right-8 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl p-6 max-w-sm z-50"
+          >
+            <div className="text-center space-y-3">
+              <motion.div
+                initial={{ rotate: 0 }}
+                animate={{ rotate: [0, 10, -10, 10, 0] }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-2xl"
+              >
+                🎉
+              </motion.div>
+              <div className="text-sm text-gray-700 leading-relaxed">
+                Made with <span className="text-red-500">❤️</span> by Aaron in <span className="text-blue-500">🇯🇵</span>
+              </div>
+              <motion.a
+                href="https://github.com/ashaney/traveled"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span>View on GitHub</span>
+                <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </motion.a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <VisitDialog 
         regionId={selectedRegion}

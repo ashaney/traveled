@@ -75,7 +75,8 @@ export default function LoginPage() {
                 alt="Traveled Logo" 
                 width={96}
                 height={96}
-                className="w-24 h-24 object-contain"
+                className="w-24 h-24 object-contain drop-shadow-lg"
+                style={{ filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.6))' }}
                 priority
               />
               <motion.div
@@ -118,13 +119,13 @@ export default function LoginPage() {
 
         {/* Right side - Login form */}
         <motion.div
-          className="flex items-center justify-center"
+          className="flex items-start justify-center lg:justify-start"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="space-y-4 pb-8">
+          <Card className="w-full max-w-md shadow-xl border-0 bg-white/80 backdrop-blur-sm mx-auto">
+            <CardHeader className="space-y-3 pb-4">
               <motion.div
                 className="flex items-center justify-center space-x-2"
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -134,9 +135,10 @@ export default function LoginPage() {
                 <Image 
                   src="/logo_with_text.png" 
                   alt="Traveled" 
-                  width={160}
-                  height={42}
-                  className="h-10 w-auto" 
+                  width={353}
+                  height={92}
+                  className="w-auto" 
+                  style={{ height: '5.5rem' }} 
                   priority
                 />
               </motion.div>
@@ -146,16 +148,16 @@ export default function LoginPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
               >
-                <CardTitle className="text-2xl text-center text-slate-800 font-semibold">
+                <CardTitle className="text-xl text-center text-slate-800 font-semibold">
                   Sign in to your account
                 </CardTitle>
-                <CardDescription className="text-center text-slate-600 mt-2">
+                <CardDescription className="text-center text-slate-600 mt-1">
                   Continue your journey and track your travels
                 </CardDescription>
               </motion.div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -194,7 +196,7 @@ export default function LoginPage() {
               </motion.div>
 
               <motion.div
-                className="text-center space-y-4"
+                className="text-center space-y-3"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1 }}
