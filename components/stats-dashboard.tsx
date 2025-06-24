@@ -24,15 +24,18 @@ interface DetailModalData {
   }>;
 }
 
-// Recharts click event types  
+// Recharts click event types - matching the actual MouseHandlerDataParam type
 interface RechartsClickData {
-  activeIndex?: string | number;
+  activeIndex?: string | number | null;
   activeLabel?: string;
-  activeDataKey?: string;
+  activeDataKey?: string | number | ((obj: unknown) => unknown);
   activeCoordinate?: {
     x: number;
     y: number;
   };
+  activePayload?: unknown[];
+  activeTooltipIndex?: string | number | null;
+  [key: string]: unknown; // Allow additional properties
 }
 
 export function StatsDashboard() {
@@ -203,7 +206,7 @@ export function StatsDashboard() {
 
   // Interactive chart handlers using BarChart onClick
   const handleStarRatingChartClick = (data: RechartsClickData) => {
-    if (data.activeIndex === undefined) return;
+    if (data.activeIndex === undefined || data.activeIndex === null) return;
     
     const index = typeof data.activeIndex === 'string' ? parseInt(data.activeIndex) : data.activeIndex;
     const clickedData = starRatingsData[index];
@@ -231,7 +234,7 @@ export function StatsDashboard() {
   };
 
   const handleVisitTypeChartClick = (data: RechartsClickData) => {
-    if (data.activeIndex === undefined) return;
+    if (data.activeIndex === undefined || data.activeIndex === null) return;
     
     const index = typeof data.activeIndex === 'string' ? parseInt(data.activeIndex) : data.activeIndex;
     const clickedData = ratingDistribution[index];
