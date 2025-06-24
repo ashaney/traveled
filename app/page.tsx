@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor } from "lucide-react";
+import { useState, useCallback, useRef } from 'react';
+import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
 import confetti from 'canvas-confetti';
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { japanPrefectures } from '@/data/japan';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
 import { VisitTable } from '@/components/visit-table';
@@ -27,11 +28,76 @@ export default function Home() {
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isSignOutHovered, setIsSignOutHovered] = useState(false);
   const [isThemeHovered, setIsThemeHovered] = useState(false);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [selectedSearchResult, setSelectedSearchResult] = useState<string | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
   const { theme, setTheme, resolvedTheme } = useTheme();
+
+  // Search functionality
+  const handleSearch = (term: string) => {
+    // Clear any pending scroll timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    if (!term.trim()) {
+      setSearchResults([]);
+      setSelectedSearchResult(null);
+      return;
+    }
+
+    const searchLower = term.toLowerCase();
+    const matches = japanPrefectures.regions.filter(region => 
+      region.name.toLowerCase().includes(searchLower) ||
+      region.nameJapanese?.includes(term) ||
+      region.id.toLowerCase().includes(searchLower)
+    ).map(region => region.id);
+
+    setSearchResults(matches);
+    
+    // Immediate map highlighting (no delay)
+    if (matches.length > 0) {
+      setSelectedSearchResult(matches[0]);
+      
+      // Debounced table scrolling (800ms delay)
+      scrollTimeoutRef.current = setTimeout(() => {
+        scrollToTableRow(matches[0]);
+      }, 800);
+    } else {
+      setSelectedSearchResult(null);
+    }
+  };
+
+  const scrollToTableRow = (regionId: string) => {
+    // Check if the prefecture exists in the table first
+    const row = document.querySelector(`[data-region-id="${regionId}"]`);
+    if (!row) {
+      // Prefecture not in table (no visits yet), just highlight on map
+      return;
+    }
+    
+    // Prefecture exists in table, proceed with scrolling
+    const tableSection = document.getElementById('table-section');
+    if (tableSection) {
+      tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Then scroll to specific row (with a delay to allow section scroll)
+    setTimeout(() => {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Briefly highlight the row
+      row.classList.add('bg-blue-100', 'dark:bg-blue-900/50');
+      setTimeout(() => {
+        row.classList.remove('bg-blue-100', 'dark:bg-blue-900/50');
+      }, 2000);
+    }, 500);
+  };
 
   const handleLogoClick = useCallback(() => {
     const newCount = logoClickCount + 1;
@@ -129,6 +195,149 @@ export default function Home() {
 
             {/* Right Section */}
             <div className="flex items-center gap-3">
+              {/* Animated Global Search */}
+              <motion.div
+                className="relative flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
+                animate={{ width: isSearchExpanded ? "240px" : "40px" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                onClick={() => {
+                  if (!isSearchExpanded) {
+                    setIsSearchExpanded(true);
+                    // Focus the input after animation
+                    setTimeout(() => {
+                      const input = document.getElementById('global-search-input') as HTMLInputElement;
+                      input?.focus();
+                    }, 350);
+                  }
+                }}
+              >
+                <div className="flex items-center justify-center w-10 h-10 bg-purple-100 dark:bg-purple-900/50 rounded-l-lg">
+                  <Search className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <AnimatePresence>
+                  {isSearchExpanded && (
+                    <motion.div
+                      className="flex items-center h-full flex-1"
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <input
+                        id="global-search-input"
+                        type="text"
+                        placeholder="Search prefectures..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setSearchTerm(value);
+                          handleSearch(value);
+                        }}
+                        onBlur={() => {
+                          if (!searchTerm) {
+                            if (scrollTimeoutRef.current) {
+                              clearTimeout(scrollTimeoutRef.current);
+                            }
+                            setIsSearchExpanded(false);
+                            setSearchResults([]);
+                            setSelectedSearchResult(null);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && searchResults.length > 0) {
+                            // Clear debounce timeout and execute immediately
+                            if (scrollTimeoutRef.current) {
+                              clearTimeout(scrollTimeoutRef.current);
+                            }
+                            // Immediate navigation on Enter
+                            scrollToTableRow(searchResults[0]);
+                            const mapSection = document.getElementById('map-section');
+                            if (mapSection) {
+                              mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }
+                          if (e.key === 'Escape') {
+                            if (scrollTimeoutRef.current) {
+                              clearTimeout(scrollTimeoutRef.current);
+                            }
+                            setSearchTerm('');
+                            setSearchResults([]);
+                            setSelectedSearchResult(null);
+                            setIsSearchExpanded(false);
+                          }
+                        }}
+                        className="w-full h-full px-3 bg-transparent border-0 outline-none text-sm text-gray-700 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+                      />
+                      {searchTerm && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (scrollTimeoutRef.current) {
+                              clearTimeout(scrollTimeoutRef.current);
+                            }
+                            setSearchTerm('');
+                            setSearchResults([]);
+                            setSelectedSearchResult(null);
+                            setIsSearchExpanded(false);
+                          }}
+                          className="px-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                {/* Search Results Dropdown */}
+                {isSearchExpanded && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {searchResults.slice(0, 8).map((regionId, index) => {
+                      const region = japanPrefectures.regions.find(r => r.id === regionId);
+                      if (!region) return null;
+                      
+                      return (
+                        <button
+                          key={regionId}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                          onClick={() => {
+                            // Clear debounce timeout and execute immediately
+                            if (scrollTimeoutRef.current) {
+                              clearTimeout(scrollTimeoutRef.current);
+                            }
+                            setSelectedSearchResult(regionId);
+                            setSearchTerm(region.name);
+                            setIsSearchExpanded(false);
+                            // Immediate navigation on click
+                            scrollToTableRow(regionId);
+                            const mapSection = document.getElementById('map-section');
+                            if (mapSection) {
+                              mapSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }}
+                        >
+                          <div>
+                            <div className="font-medium text-gray-900 dark:text-gray-100">{region.name}</div>
+                            {region.nameJapanese && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{region.nameJapanese}</div>
+                            )}
+                          </div>
+                          {index === 0 && (
+                            <div className="text-xs text-blue-600 dark:text-blue-400">⏎</div>
+                          )}
+                        </button>
+                      );
+                    })}
+                    {searchResults.length > 8 && (
+                      <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center border-t border-gray-100 dark:border-gray-700">
+                        +{searchResults.length - 8} more results
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+
               {/* Animated Country Selector */}
               <motion.div
                 className="relative flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm"
@@ -326,6 +535,7 @@ export default function Home() {
                 <div className="flex justify-center">
                   <JapanRegionMap 
                     onRegionClick={handleRegionClick}
+                    selectedRegion={selectedSearchResult || undefined}
                     className="w-full"
                   />
                 </div>

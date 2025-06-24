@@ -19,7 +19,7 @@ interface VisitTableProps {
 
 export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   const { visits, deleteVisit, getPrefectureRating, getVisitsByRegion } = useSupabaseVisits();
-  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'recentType' | 'highestType' | 'visits'>('region');
+  const [sortBy, setSortBy] = useState<'region' | 'rating' | 'date' | 'recentType' | 'highestType' | 'visits' | 'firstVisit'>('region');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -46,6 +46,13 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   // Get prefecture star rating from the prefecture_ratings table
   const getPrefectureStarRating = (regionId: string) => {
     return getPrefectureRating(regionId, 'japan') || 0;
+  };
+
+  // Get first visit year for a region
+  const getFirstVisitYear = (regionId: string) => {
+    const regionVisits = getVisitsByRegion(regionId).filter(visit => visit.rating > 0);
+    if (regionVisits.length === 0) return null;
+    return Math.min(...regionVisits.map(visit => visit.visit_year));
   };
 
   // Get highest visit type per region
@@ -128,12 +135,17 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
         const bVisitCount = getVisitsByRegion(b.region_id).length;
         comparison = aVisitCount - bVisitCount;
         break;
+      case 'firstVisit':
+        const aFirstVisit = getFirstVisitYear(a.region_id) || 9999;
+        const bFirstVisit = getFirstVisitYear(b.region_id) || 9999;
+        comparison = aFirstVisit - bFirstVisit;
+        break;
     }
     
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const handleSort = (column: 'region' | 'rating' | 'date' | 'recentType' | 'highestType' | 'visits') => {
+  const handleSort = (column: 'region' | 'rating' | 'date' | 'recentType' | 'highestType' | 'visits' | 'firstVisit') => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -144,13 +156,14 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
 
   const exportData = () => {
     const csvData = [
-      ['Prefecture', 'Most Recent Type', 'Highest Type', '# Visits', 'Rating', 'Visit Year'],
+      ['Prefecture', 'Most Recent Type', 'Highest Type', '# Visits', 'Rating', 'First Visit', 'Most Recent'],
       ...sortedVisits.map(visit => [
         getRegionName(visit.region_id),
         RATING_LABELS[visit.rating as VisitRating],
         RATING_LABELS[getHighestVisitType(visit.region_id) as VisitRating],
         getVisitsByRegion(visit.region_id).length.toString(),
         getPrefectureStarRating(visit.region_id).toString(),
+        getFirstVisitYear(visit.region_id)?.toString() || '',
         visit.visit_year.toString()
       ])
     ];
@@ -243,7 +256,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
             <TableHeader>
               <TableRow className="bg-gray-50/50 dark:bg-gray-700/50">
                 <TableHead 
-                  className="font-semibold w-36 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-36 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('region')}
                 >
                   Prefecture
@@ -252,7 +265,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('recentType')}
                 >
                   Most Recent Type
@@ -261,7 +274,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('highestType')}
                 >
                   Highest Type
@@ -270,7 +283,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-20 text-center cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-20 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('visits')}
                 >
                   # Visits
@@ -279,7 +292,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-36 cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-36 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('rating')}
                 >
                   Rating
@@ -288,7 +301,16 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   )}
                 </TableHead>
                 <TableHead 
-                  className="font-semibold w-32 text-center cursor-pointer hover:bg-gray-50"
+                  className="font-semibold w-28 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
+                  onClick={() => handleSort('firstVisit')}
+                >
+                  First Visit
+                  {sortBy === 'firstVisit' && (
+                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </TableHead>
+                <TableHead 
+                  className="font-semibold w-32 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('date')}
                 >
                   Most Recent
@@ -303,7 +325,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
               {sortedVisits.map((visit) => {
                 const overallRating = getPrefectureStarRating(visit.region_id);
                 return (
-                <TableRow key={visit.region_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50">
+                <TableRow key={visit.region_id} data-region-id={visit.region_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors duration-300">
                   <TableCell className="font-medium">
                     <button
                       onClick={() => onManagePrefecture?.(visit.region_id)}
@@ -332,6 +354,9 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                         <span className="ml-1 text-xs text-gray-600">({overallRating})</span>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-sm font-medium text-center">
+                    {getFirstVisitYear(visit.region_id) || '—'}
                   </TableCell>
                   <TableCell className="text-sm font-medium text-center">
                     {visit.visit_year}
