@@ -183,3 +183,4 @@ bun.lockb
 # Local storage/cache
 .turbo/
 .rush/
+optimize.md
