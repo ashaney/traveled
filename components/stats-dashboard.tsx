@@ -248,6 +248,9 @@ export function StatsDashboard() {
                     labelStyle={{
                       color: resolvedTheme === 'dark' ? '#FFFFFF' : '#6B7280'
                     }}
+                    itemStyle={{
+                      color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -294,16 +297,19 @@ export function StatsDashboard() {
                     name
                   ]}
                   contentStyle={{
-                    backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#FFFFFF',
+                    backgroundColor: resolvedTheme === 'dark' ? '#1F2937' : '#FFFFFF',
                     border: resolvedTheme === 'dark' ? 'none' : '1px solid #E5E7EB',
                     borderRadius: '8px',
-                    color: resolvedTheme === 'dark' ? '#F3F4F6' : '#1F2937',
+                    color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937',
                     boxShadow: resolvedTheme === 'dark' 
-                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.3)' 
+                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.5)' 
                       : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                   }}
                   labelStyle={{
-                    color: resolvedTheme === 'dark' ? '#D1D5DB' : '#6B7280'
+                    color: resolvedTheme === 'dark' ? '#FFFFFF' : '#6B7280'
+                  }}
+                  itemStyle={{
+                    color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
                   }}
                 />
                 <Bar dataKey="count">
