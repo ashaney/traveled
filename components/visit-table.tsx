@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { Trash2, Download, MapPin, Star, Search, Filter } from 'lucide-react';
+import { Trash2, Download, MapPin, Star, Search, Filter, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VisitTableProps {
@@ -251,10 +252,9 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
 
       <CardContent>
         <div className="rounded-lg border overflow-hidden">
-          <div className="overflow-y-auto max-h-96" style={{ scrollbarGutter: 'stable' }}>
-            <Table>
+          <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50/50 dark:bg-gray-700/50">
+              <TableRow className="sticky top-0 z-10 bg-gray-50/95 dark:bg-gray-700/95 backdrop-blur-sm">
                 <TableHead 
                   className="font-semibold w-36 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('region')}
@@ -295,10 +295,28 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                   className="font-semibold w-36 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
                   onClick={() => handleSort('rating')}
                 >
-                  Rating
-                  {sortBy === 'rating' && (
-                    <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <span>Rating</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <HelpCircle className="w-3 h-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <div className="space-y-1 text-sm">
+                            <div>⭐ 1 star: Did not like 👎</div>
+                            <div>⭐⭐ 2 stars: Nothing to write home about 😐</div>
+                            <div>⭐⭐⭐ 3 stars: I liked it 🙂</div>
+                            <div>⭐⭐⭐⭐ 4 stars: I loved it 😀</div>
+                            <div>⭐⭐⭐⭐⭐ 5 stars: Awesome place to visit 🤩</div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    {sortBy === 'rating' && (
+                      <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
+                    )}
+                  </div>
                 </TableHead>
                 <TableHead 
                   className="font-semibold w-28 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -376,7 +394,6 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
               )})}
             </TableBody>
             </Table>
-          </div>
         </div>
 
         {sortedVisits.length === 0 && (
