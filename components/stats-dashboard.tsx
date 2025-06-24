@@ -1,19 +1,44 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, RATING_COLORS, VisitRating } from '@/types';
-import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat } from 'lucide-react';
+import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat, Star, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, Cell } from 'recharts';
+import { cn } from '@/lib/utils';
+
+interface DetailModalData {
+  type: 'stars' | 'visitType' | 'region';
+  title: string;
+  prefectures: Array<{
+    id: string;
+    name: string;
+    value: number | string;
+    color?: string;
+  }>;
+}
+
+interface ChartData {
+  stars?: number;
+  count: number;
+  name: string;
+  color: string;
+  fullName?: string;
+}
 
 export function StatsDashboard() {
   const { getStats, getVisitsByCountry, getPrefectureRating } = useSupabaseVisits();
   const { resolvedTheme } = useTheme();
   const stats = getStats('japan', japanPrefectures.regions.length);
   const japanVisits = getVisitsByCountry('japan');
+  const [detailModal, setDetailModal] = useState<DetailModalData | null>(null);
   
   // Prepare star ratings data (only for prefectures eligible for ratings)
   const starRatingsData = [];
@@ -169,6 +194,81 @@ export function StatsDashboard() {
     };
   }).sort((a, b) => b.percentage - a.percentage);
 
+  // Interactive chart handlers
+  const handleStarRatingClick = (data: ChartData) => {
+    const starLevel = data.stars;
+    const prefecturesWithThisRating = eligibleForStars
+      .filter(regionId => getPrefectureRating(regionId, 'japan') === starLevel)
+      .map(regionId => {
+        const prefecture = japanPrefectures.regions.find(r => r.id === regionId);
+        return {
+          id: regionId,
+          name: prefecture?.name || regionId,
+          value: `${starLevel} star${starLevel !== 1 ? 's' : ''}`,
+          color: data.color
+        };
+      });
+
+    setDetailModal({
+      type: 'stars',
+      title: `Prefectures with ${starLevel} Star${starLevel !== 1 ? 's' : ''}`,
+      prefectures: prefecturesWithThisRating
+    });
+  };
+
+  const handleVisitTypeClick = (data: ChartData) => {
+    const ratingValue = Object.entries(RATING_LABELS).find(([, label]) => 
+      label.split(' ')[0] === data.name
+    )?.[0];
+    
+    if (!ratingValue) return;
+    
+    const rating = parseInt(ratingValue) as VisitRating;
+    const prefecturesWithThisType = japanVisits
+      .filter(visit => visit.rating === rating)
+      .map(visit => visit.region_id)
+      .filter((regionId, index, array) => array.indexOf(regionId) === index) // Remove duplicates
+      .map(regionId => {
+        const prefecture = japanPrefectures.regions.find(r => r.id === regionId);
+        return {
+          id: regionId,
+          name: prefecture?.name || regionId,
+          value: RATING_LABELS[rating],
+          color: data.color
+        };
+      });
+
+    setDetailModal({
+      type: 'visitType',
+      title: `Prefectures with "${RATING_LABELS[rating]}" visits`,
+      prefectures: prefecturesWithThisType
+    });
+  };
+
+  const handleRegionClick = (regionName: string) => {
+    const region = regionTracker.find(r => r.region === regionName);
+    if (!region) return;
+
+    const regionPrefectures = Object.entries(regionMapping)
+      .filter(([, r]) => r === regionName)
+      .map(([prefectureId]) => {
+        const prefecture = japanPrefectures.regions.find(r => r.id === prefectureId);
+        const hasVisits = regionVisitData[regionName]?.has(prefectureId) || false;
+        return {
+          id: prefectureId,
+          name: prefecture?.name || prefectureId,
+          value: hasVisits ? 'Visited' : 'Not visited',
+          color: hasVisits ? '#3b82f6' : '#e5e7eb'
+        };
+      });
+
+    setDetailModal({
+      type: 'region',
+      title: `${regionName} Region (${region.visited}/${region.total} visited)`,
+      prefectures: regionPrefectures
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
@@ -276,7 +376,10 @@ export function StatsDashboard() {
         {/* Star Ratings Chart */}
         <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base dark:text-gray-100">Star Ratings</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100 flex items-center justify-between">
+              Star Ratings
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">Click bars for details</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {starRatingsData.length > 0 ? (
@@ -312,9 +415,17 @@ export function StatsDashboard() {
                       color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
                     }}
                   />
-                  <Bar dataKey="count">
+                  <Bar 
+                    dataKey="count" 
+                    onClick={handleStarRatingClick}
+                    className="cursor-pointer"
+                  >
                     {starRatingsData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color}
+                        className="hover:opacity-80 transition-opacity"
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -342,7 +453,10 @@ export function StatsDashboard() {
         {/* Rating Distribution Bar Chart */}
         <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base dark:text-gray-100">Types</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100 flex items-center justify-between">
+              Types
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">Click bars for details</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -377,9 +491,17 @@ export function StatsDashboard() {
                     color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
                   }}
                 />
-                <Bar dataKey="count">
+                <Bar 
+                  dataKey="count"
+                  onClick={handleVisitTypeClick}
+                  className="cursor-pointer"
+                >
                   {ratingDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color}
+                      className="hover:opacity-80 transition-opacity"
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -442,12 +564,19 @@ export function StatsDashboard() {
         {/* Region Tracker - Fourth chart */}
         <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base dark:text-gray-100">Regions</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100 flex items-center justify-between">
+              Regions
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">Click for details</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {regionTracker.map((region) => (
-                <div key={region.region} className="flex items-center justify-between">
+                <div 
+                  key={region.region} 
+                  className="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 -m-2 transition-colors"
+                  onClick={() => handleRegionClick(region.region)}
+                >
                   <div className="flex items-center gap-3 flex-1">
                     <span className="text-sm font-medium text-gray-900 dark:text-gray-100 w-16">
                       {region.region}
@@ -511,6 +640,62 @@ export function StatsDashboard() {
           </Card>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <Dialog open={!!detailModal} onOpenChange={() => setDetailModal(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailModal?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {detailModal?.type === 'stars' && 'Prefectures with this star rating'}
+              {detailModal?.type === 'visitType' && 'Prefectures with this visit type'}
+              {detailModal?.type === 'region' && 'All prefectures in this region'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            {detailModal?.prefectures.map((prefecture) => (
+              <div key={prefecture.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: prefecture.color }}
+                  />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {prefecture.name}
+                  </span>
+                </div>
+                <Badge 
+                  variant="secondary" 
+                  className={cn(
+                    "text-xs",
+                    detailModal?.type === 'stars' && "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                    detailModal?.type === 'visitType' && "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                    detailModal?.type === 'region' && prefecture.value === 'Visited' && "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                    detailModal?.type === 'region' && prefecture.value === 'Not visited' && "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400"
+                  )}
+                >
+                  {detailModal?.type === 'stars' && (
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 fill-current" />
+                      {prefecture.value}
+                    </div>
+                  )}
+                  {detailModal?.type !== 'stars' && prefecture.value}
+                </Badge>
+              </div>
+            ))}
+            
+            {detailModal?.prefectures.length === 0 && (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                No prefectures found for this category
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
