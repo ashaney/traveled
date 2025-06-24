@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, VisitRating } from '@/types';
-import { Star, Calendar } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface VisitDialogProps {
@@ -23,7 +23,6 @@ interface VisitDialogProps {
 export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialogProps) {
   const { getVisitsByRegion, addVisit, updateVisit, visits } = useSupabaseVisits();
   const [selectedType, setSelectedType] = useState<VisitRating>(0);
-  const [selectedRating, setSelectedRating] = useState<VisitRating>(0);
   const [visitYear, setVisitYear] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
@@ -38,29 +37,17 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
     if (existingVisit) {
       // Editing existing visit
       setSelectedType(existingVisit.rating as VisitRating);
-      setSelectedRating((existingVisit.star_rating || 0) as VisitRating);
       setVisitYear(existingVisit.visit_year?.toString() || new Date().getFullYear().toString());
       setNotes(existingVisit.notes || '');
     } else {
       // Creating new visit
       setSelectedType(0);
-      setSelectedRating(0);
       setVisitYear(new Date().getFullYear().toString()); // Default to current year
       setNotes('');
     }
     setError('');
   }, [existingVisit, open]);
 
-  // Auto-set rating to 0 for N/A visit types, preserve existing ratings for others
-  useEffect(() => {
-    const showNAForTypes = [0, 1, 2];
-    if (showNAForTypes.includes(selectedType)) {
-      setSelectedRating(0);
-    } else if (!existingVisit) {
-      // Only reset to 0 for new visits when switching to rating-eligible types
-      setSelectedRating(0);
-    }
-  }, [selectedType, existingVisit]);
 
   const handleSave = async () => {
     if (!regionId) return;
@@ -79,7 +66,6 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
         // Update existing visit
         await updateVisit(existingVisit.id, {
           rating: selectedType,
-          star_rating: selectedRating > 0 ? selectedRating : null,
           visit_year: year,
           notes: notes.trim() || null,
         });
@@ -111,42 +97,6 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
     return colors[type];
   };
 
-  const renderStars = (rating: VisitRating) => {
-    // For types 0 (Never been), 1 (Passed through), 2 (Brief stop), don't show ratings
-    const showNAForTypes = [0, 1, 2];
-    const shouldShowNA = showNAForTypes.includes(selectedType);
-    
-    if (shouldShowNA) {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-gray-500 italic">N/A - Not applicable for this visit type</span>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="flex items-center gap-1">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Star 
-            key={i} 
-            className={cn(
-              "w-6 h-6 cursor-pointer transition-colors",
-              i < rating 
-                ? "fill-yellow-400 text-yellow-400" 
-                : "text-gray-300 hover:text-yellow-200"
-            )}
-            onClick={() => setSelectedRating((i + 1) as VisitRating)}
-          />
-        ))}
-        <button
-          onClick={() => setSelectedRating(0)}
-          className="ml-2 text-xs text-gray-500 hover:text-gray-700 underline"
-        >
-          Clear
-        </button>
-      </div>
-    );
-  };
 
   if (!region) return null;
 
@@ -179,7 +129,6 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
                 {regionVisits.map(visit => (
                   <div key={visit.id} className="text-sm text-blue-800">
                     {visit.visit_year}: {RATING_LABELS[visit.rating as VisitRating]}
-                    {visit.star_rating && ` (${visit.star_rating} star${visit.star_rating !== 1 ? 's' : ''})`}
                   </div>
                 ))}
               </div>
@@ -227,17 +176,6 @@ export function VisitDialog({ regionId, open, onClose, editVisitId }: VisitDialo
             </Select>
           </div>
 
-          <div>
-            <Label className="text-sm font-medium mb-2 block">
-              Rating
-            </Label>
-            <div className="flex items-center gap-1">
-              {renderStars(selectedRating)}
-              {![0, 1, 2].includes(selectedType) && selectedRating > 0 && (
-                <span className="ml-2 text-sm text-gray-600">({selectedRating} star{selectedRating !== 1 ? 's' : ''})</span>
-              )}
-            </div>
-          </div>
 
           <div>
             <Label htmlFor="notes" className="text-sm font-medium mb-2 block">

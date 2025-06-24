@@ -220,25 +220,27 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Prefecture Rating</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Overall impression of {region.name}</p>
               </div>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Star 
-                    key={i} 
-                    className={cn(
-                      "w-6 h-6 cursor-pointer transition-colors",
-                      i < prefectureStarRating 
-                        ? "fill-yellow-400 text-yellow-400" 
-                        : "text-gray-300 hover:text-yellow-200"
-                    )}
-                    onClick={() => setPrefectureStarRating(i + 1)}
-                  />
-                ))}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star 
+                      key={i} 
+                      className={cn(
+                        "w-6 h-6 cursor-pointer transition-colors",
+                        i < prefectureStarRating 
+                          ? "fill-yellow-400 text-yellow-400" 
+                          : "text-gray-300 hover:text-yellow-200"
+                      )}
+                      onClick={() => setPrefectureStarRating(i + 1)}
+                    />
+                  ))}
+                </div>
                 {prefectureStarRating > 0 && (
                   <button
                     onClick={() => setPrefectureStarRating(0)}
-                    className="ml-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline self-center"
                   >
-                    Clear
+                    Clear rating
                   </button>
                 )}
               </div>
