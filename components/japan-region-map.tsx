@@ -153,7 +153,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
   return (
     <div className={cn("relative overflow-hidden", className)}>
       {/* Controls */}
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-4 left-0 z-10 flex flex-col gap-2">
         {/* Zoom Controls */}
         <div className="flex flex-col gap-1">
           <button
@@ -179,93 +179,13 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
           </button>
         </div>
         
-        {/* Filter Controls */}
-        <div className="flex flex-col gap-1 border-t border-gray-200 pt-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={cn(
-              "p-2 border rounded-md shadow-sm transition-colors",
-              showFilters || hasActiveFilters
-                ? "bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-700"
-                : "bg-white/90 hover:bg-white border-gray-300"
-            )}
-            title="Toggle Filters"
-          >
-            <Filter className="w-4 h-4" />
-          </button>
-          
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="p-2 bg-red-100 hover:bg-red-200 border border-red-300 rounded-md shadow-sm transition-colors text-red-700"
-              title="Clear Filters"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
       </div>
       
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="absolute top-4 left-20 z-10 bg-white rounded-lg border border-gray-300 shadow-lg p-4 min-w-64">
-          <h3 className="font-medium text-gray-900 mb-3 text-sm">Filter Map</h3>
-          
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">By Year</label>
-              <Select value={filters.year?.toString() || ''} onValueChange={(value) => 
-                setFilters({ year: value ? parseInt(value) : undefined })
-              }>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="All years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All years</SelectItem>
-                  {availableYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-xs font-medium text-gray-600 mb-1 block">By Visit Type</label>
-              <Select value={filters.visitType?.toString() || ''} onValueChange={(value) => 
-                setFilters({ visitType: value ? parseInt(value) as VisitRating : undefined })
-              }>
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
-                  {(Object.keys(RATING_LABELS) as unknown as VisitRating[]).map(rating => (
-                    <SelectItem key={rating} value={rating.toString()}>
-                      {RATING_LABELS[rating]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {hasActiveFilters && (
-              <Button
-                onClick={clearFilters}
-                variant="outline"
-                size="sm"
-                className="w-full h-8 text-xs"
-              >
-                Clear All Filters
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
       
       <svg 
         ref={svgRef}
-        width="1513" 
-        height="982" 
+        width="1589" 
+        height="850" 
         viewBox="0 0 1637 1325" 
         className="w-full h-auto cursor-grab active:cursor-grabbing" 
         xmlns="http://www.w3.org/2000/svg"

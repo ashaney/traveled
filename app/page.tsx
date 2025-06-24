@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, MapPin } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -187,42 +187,43 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="mb-4">
           {/* Main Content - Map */}
           <div>
-            {/* Japan Explorer Map */}
+            {/* Explore the Map */}
             <section id="map-section" className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPin className="w-6 h-6 text-green-600" />
+                <h2 className="text-2xl font-bold text-gray-900">Explore the Map</h2>
+              </div>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {countries[selectedCountry as keyof typeof countries].name} Explorer
-                </h2>
                 <p className="text-sm text-gray-600">Click any region to track visits</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow-sm border-0 p-8">
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-sm mb-8">
-                  <div className="flex items-center gap-2">
+              <div className="bg-white rounded-lg shadow-sm border-0 p-3">
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-6 text-sm mb-4 px-4">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-gray-200 rounded"></div>
                     <span className="text-gray-600">Never been</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-red-200 rounded"></div>
                     <span className="text-gray-600">Passed through</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-orange-200 rounded"></div>
                     <span className="text-gray-600">Brief stop</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-yellow-200 rounded"></div>
                     <span className="text-gray-600">Day visit</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-green-200 rounded"></div>
                     <span className="text-gray-600">Multi-day stay</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 bg-blue-200 rounded"></div>
                     <span className="text-gray-600">Lived there</span>
                   </div>
