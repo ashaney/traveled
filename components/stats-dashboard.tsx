@@ -5,12 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, RATING_COLORS, VisitRating } from '@/types';
-import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat, Star, X } from 'lucide-react';
+import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat, Star } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 
@@ -25,12 +24,15 @@ interface DetailModalData {
   }>;
 }
 
-interface ChartData {
-  stars?: number;
-  count: number;
-  name: string;
-  color: string;
-  fullName?: string;
+// Recharts click event types  
+interface RechartsClickData {
+  activeIndex?: string | number;
+  activeLabel?: string;
+  activeDataKey?: string;
+  activeCoordinate?: {
+    x: number;
+    y: number;
+  };
 }
 
 export function StatsDashboard() {
@@ -41,7 +43,12 @@ export function StatsDashboard() {
   const [detailModal, setDetailModal] = useState<DetailModalData | null>(null);
   
   // Prepare star ratings data (only for prefectures eligible for ratings)
-  const starRatingsData = [];
+  const starRatingsData: Array<{
+    stars: number;
+    count: number;
+    name: string;
+    color: string;
+  }> = [];
   const eligiblePrefectures = japanVisits
     .filter(visit => visit.rating > 0) // Has visits
     .reduce((acc, visit) => {
@@ -194,9 +201,16 @@ export function StatsDashboard() {
     };
   }).sort((a, b) => b.percentage - a.percentage);
 
-  // Interactive chart handlers
-  const handleStarRatingClick = (data: ChartData) => {
-    const starLevel = data.stars;
+  // Interactive chart handlers using BarChart onClick
+  const handleStarRatingChartClick = (data: RechartsClickData) => {
+    if (data.activeIndex === undefined) return;
+    
+    const index = typeof data.activeIndex === 'string' ? parseInt(data.activeIndex) : data.activeIndex;
+    const clickedData = starRatingsData[index];
+    
+    if (!clickedData) return;
+    
+    const starLevel = clickedData.stars;
     const prefecturesWithThisRating = eligibleForStars
       .filter(regionId => getPrefectureRating(regionId, 'japan') === starLevel)
       .map(regionId => {
@@ -205,7 +219,7 @@ export function StatsDashboard() {
           id: regionId,
           name: prefecture?.name || regionId,
           value: `${starLevel} star${starLevel !== 1 ? 's' : ''}`,
-          color: data.color
+          color: clickedData.color
         };
       });
 
@@ -216,9 +230,16 @@ export function StatsDashboard() {
     });
   };
 
-  const handleVisitTypeClick = (data: ChartData) => {
+  const handleVisitTypeChartClick = (data: RechartsClickData) => {
+    if (data.activeIndex === undefined) return;
+    
+    const index = typeof data.activeIndex === 'string' ? parseInt(data.activeIndex) : data.activeIndex;
+    const clickedData = ratingDistribution[index];
+    
+    if (!clickedData) return;
+    
     const ratingValue = Object.entries(RATING_LABELS).find(([, label]) => 
-      label.split(' ')[0] === data.name
+      label.split(' ')[0] === clickedData.name
     )?.[0];
     
     if (!ratingValue) return;
@@ -234,7 +255,7 @@ export function StatsDashboard() {
           id: regionId,
           name: prefecture?.name || regionId,
           value: RATING_LABELS[rating],
-          color: data.color
+          color: clickedData.color
         };
       });
 
@@ -384,7 +405,12 @@ export function StatsDashboard() {
           <CardContent>
             {starRatingsData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={starRatingsData} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
+                <BarChart 
+                  data={starRatingsData} 
+                  margin={{ top: 5, right: 15, left: 10, bottom: 35 }}
+                  onClick={handleStarRatingChartClick}
+                  className="cursor-pointer"
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis 
                     dataKey="name" 
@@ -415,11 +441,7 @@ export function StatsDashboard() {
                       color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
                     }}
                   />
-                  <Bar 
-                    dataKey="count" 
-                    onClick={handleStarRatingClick}
-                    className="cursor-pointer"
-                  >
+                  <Bar dataKey="count">
                     {starRatingsData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
@@ -460,7 +482,12 @@ export function StatsDashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={ratingDistribution} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
+              <BarChart 
+                data={ratingDistribution} 
+                margin={{ top: 5, right: 15, left: 10, bottom: 35 }}
+                onClick={handleVisitTypeChartClick}
+                className="cursor-pointer"
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                 <XAxis 
                   dataKey="name" 
@@ -491,11 +518,7 @@ export function StatsDashboard() {
                     color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
                   }}
                 />
-                <Bar 
-                  dataKey="count"
-                  onClick={handleVisitTypeClick}
-                  className="cursor-pointer"
-                >
+                <Bar dataKey="count">
                   {ratingDistribution.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { createClient } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Database } from '@/types/database'
+import { validateVisitData, validatePrefectureRating, VisitValidationError } from '@/lib/validation'
 
 type Visit = Database['public']['Tables']['visits']['Row']
 type VisitInsert = Database['public']['Tables']['visits']['Insert']
@@ -128,6 +129,17 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
   ) => {
     if (!user) throw new Error('User must be authenticated')
 
+    // Server-side validation
+    const validationErrors = validateVisitData({
+      rating,
+      visit_year: visitYear,
+      notes: notes || null
+    });
+
+    if (validationErrors.length > 0) {
+      throw new Error(`Validation failed: ${validationErrors.map(e => e.message).join(', ')}`);
+    }
+
     const visitData: VisitInsert = {
       user_id: user.id,
       region_id: regionId,
@@ -150,6 +162,21 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
 
   const updateVisit = useCallback(async (visitId: string, updates: Partial<VisitUpdate>) => {
     if (!user) throw new Error('User must be authenticated')
+
+    // Server-side validation for updates that include these fields
+    if (updates.rating !== undefined || updates.visit_year !== undefined || updates.notes !== undefined) {
+      const validationData = {
+        rating: updates.rating as VisitRating,
+        visit_year: updates.visit_year as number,
+        notes: updates.notes
+      };
+
+      const validationErrors = validateVisitData(validationData);
+
+      if (validationErrors.length > 0) {
+        throw new Error(`Validation failed: ${validationErrors.map(e => e.message).join(', ')}`);
+      }
+    }
 
     const { data, error } = await supabase
       .from('visits')
@@ -250,6 +277,13 @@ export function SupabaseVisitsProvider({ children }: { children: React.ReactNode
 
   const setPrefectureRating = useCallback(async (regionId: string, countryId: string, starRating: number) => {
     if (!user) throw new Error('User must be authenticated')
+
+    // Server-side validation
+    const validationErrors = validatePrefectureRating(starRating);
+
+    if (validationErrors.length > 0) {
+      throw new Error(`Validation failed: ${validationErrors.map(e => e.message).join(', ')}`);
+    }
 
     const ratingData: PrefectureRatingInsert = {
       user_id: user.id,

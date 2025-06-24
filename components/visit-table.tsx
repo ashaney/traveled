@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { createRateLimiter } from '@/lib/validation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,9 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTarget, setFilterTarget] = useState<'recent' | 'highest'>('recent');
+  
+  // Rate limiter for CSV export (max 3 exports per minute)
+  const exportRateLimiter = useMemo(() => createRateLimiter(3, 60000), []);
 
   const japanVisits = visits.filter(visit => visit.country_id === 'japan');
 
@@ -156,9 +160,23 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   };
 
   const exportData = () => {
+    // Rate limiting check
+    if (!exportRateLimiter()) {
+      alert('Export rate limit exceeded. Please wait a minute before exporting again.');
+      return;
+    }
+
+    // Limit export size for very large datasets (max 1000 rows)
+    const dataToExport = sortedVisits.slice(0, 1000);
+    
+    if (sortedVisits.length > 1000) {
+      const proceed = confirm(`Dataset is large (${sortedVisits.length} rows). Only the first 1000 rows will be exported. Continue?`);
+      if (!proceed) return;
+    }
+
     const csvData = [
       ['Prefecture', 'Most Recent Type', 'Highest Type', '# Visits', 'Rating', 'First Visit', 'Most Recent'],
-      ...sortedVisits.map(visit => [
+      ...dataToExport.map(visit => [
         getRegionName(visit.region_id),
         RATING_LABELS[visit.rating as VisitRating],
         RATING_LABELS[getHighestVisitType(visit.region_id) as VisitRating],
