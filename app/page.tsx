@@ -27,9 +27,6 @@ export default function Home() {
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
 
-  const countries = {
-    japan: { name: 'Japan', flag: '🇯🇵' },
-  };
 
   if (loading || visitsLoading) {
     return (

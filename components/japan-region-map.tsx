@@ -5,9 +5,7 @@ import { cn } from '@/lib/utils';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { RATING_COLORS, RATING_LABELS, VisitRating } from '@/types';
 import { allRegionPaths, PrefecturePath } from '@/data/japan-realistic-svg-paths';
-import { ZoomIn, ZoomOut, RotateCcw, Filter, X } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { ZoomIn, ZoomOut, RotateCcw, Filter } from 'lucide-react';
 
 interface JapanRegionMapProps {
   className?: string;
@@ -22,13 +20,12 @@ interface MapFilters {
 }
 
 export function JapanRegionMap({ className, onRegionClick, selectedRegion }: JapanRegionMapProps) {
-  const { getHighestRatedVisitByRegion, getVisitsByRegion, visits } = useSupabaseVisits();
+  const { getHighestRatedVisitByRegion, getVisitsByRegion } = useSupabaseVisits();
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [filters, setFilters] = useState<MapFilters>({});
-  const [showFilters, setShowFilters] = useState(false);
+  const [filters] = useState<MapFilters>({});
   const svgRef = useRef<SVGSVGElement>(null);
 
   const getRegionColor = (regionId: string) => {
@@ -61,18 +58,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
     return RATING_COLORS[rating as VisitRating];
   };
   
-  const clearFilters = () => {
-    setFilters({});
-  };
-  
   const hasActiveFilters = Object.keys(filters).length > 0;
-  
-  // Get unique years for filter dropdown
-  const availableYears = [...new Set(
-    visits
-      .filter(visit => visit.country_id === 'japan' && visit.rating > 0 && visit.visit_year != null)
-      .map(visit => visit.visit_year)
-  )].sort((a, b) => b - a);
 
   const mapClickHandler = (regionId: string) => {
     if (!isDragging) {
