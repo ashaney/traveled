@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Traveled - Japan Travel Tracker
 
-## Getting Started
+A modern travel tracking application that allows travelers to Japan to record, visualize, and analyze their travel experiences across all 47 prefectures.
 
-First, run the development server:
+## ✨ Features
 
+### 🗾 Interactive Japan Map
+- Click any prefecture to record visits and experiences
+- Visual color-coding based on visit types
+- Pan and zoom controls for detailed exploration
+- Real-time updates reflecting your travel history
+
+### 📊 Travel Analytics Dashboard
+- **Progress Tracking**: Visual progress bar showing percentage of Japan explored
+- **Visit Statistics**: Total visits, visits this year, and comprehensive metrics
+- **Best Score**: Peak experience rating per prefecture
+- **Most Visited Prefecture**: Track your favorite destinations
+- **Interactive Charts**: Pie charts, bar graphs, and timeline visualizations
+
+### 📝 Visit Records Management
+- Detailed table of all prefecture visits
+- Multiple visit types per prefecture with year tracking
+- Star ratings for memorable experiences (1-5 stars)
+- Search and filter capabilities by visit type (recent or highest)
+- Export data to CSV for external analysis
+
+### 🎯 Visit Experience Levels
+
+Our system uses 6 distinct experience levels:
+
+- **0 - Never been**: Unvisited prefectures
+- **1 - Passed through**: Transit or brief passage
+- **2 - Brief stop**: Quick stop (rest area, transfer)
+- **3 - Day visit**: Explored attractions in a single day
+- **4 - Multi-day stay**: Stayed overnight, deeper exploration
+- **5 - Lived there**: Extended residence (work, study, etc.)
+
+### 🚀 Advanced Features
+
+- **Multi-year tracking**: Record multiple visits to the same prefecture across different years
+- **Star ratings**: Rate your experiences for prefectures with substantial visits (3+ level)
+- **Data persistence**: All data securely stored with user authentication
+- **Responsive design**: Works seamlessly on desktop, tablet, and mobile
+- **Real-time sync**: Changes reflected instantly across all views
+
+## 🛠️ Technology Stack
+
+- **Frontend**: Next.js 15, React, TypeScript
+- **Styling**: Tailwind CSS, Framer Motion
+- **Charts**: Recharts for data visualization
+- **Authentication**: Supabase Auth
+- **Database**: Supabase PostgreSQL
+- **Icons**: Lucide React
+- **Deployment**: Vercel
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ or Bun
+- Supabase account for backend services
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd traveled
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+bun install
+# or
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables:
+```bash
+cp .env.example .env.local
+# Add your Supabase URL and keys
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server:
+```bash
+bun dev
+# or
+npm run dev
+```
 
-## Learn More
+5. Open [http://localhost:3000](http://localhost:3000) to start tracking your travels!
 
-To learn more about Next.js, take a look at the following resources:
+## 📱 Usage
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Sign up/Login** to create your personal travel profile
+2. **Click on prefectures** on the interactive map to record visits
+3. **Rate your experiences** with our 6-level system
+4. **Add star ratings** for memorable stays and experiences
+5. **View analytics** to see your travel patterns and progress
+6. **Export data** to keep your own records or share achievements
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎨 Design Philosophy
 
-## Deploy on Vercel
+Inspired by similar prefecture tracking applications, Traveled focuses on:
+- **User Experience**: Intuitive interface with minimal learning curve
+- **Data Richness**: Capture detailed travel experiences beyond simple "visited/not visited"
+- **Analytics**: Transform travel data into meaningful insights and visualizations
+- **Flexibility**: Support various travel styles from brief transits to extended stays
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🗺️ Inspiration
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project draws inspiration from [JapanEx](https://github.com/ukyouz/JapanEx) and similar prefecture tracking tools, enhanced with modern web technologies and comprehensive analytics features.
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit pull requests, report bugs, or suggest new features.
+
+---
+
+**Start tracking your Japan adventures today and see your travel story come to life!** 🇯🇵✈️
