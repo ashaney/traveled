@@ -7,21 +7,45 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, RATING_COLORS, VisitRating } from '@/types';
 import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Area, AreaChart, Cell } from 'recharts';
 
 export function StatsDashboard() {
-  const { getStats, getVisitsByCountry } = useSupabaseVisits();
+  const { getStats, getVisitsByCountry, getPrefectureRating } = useSupabaseVisits();
   const { resolvedTheme } = useTheme();
   const stats = getStats('japan', japanPrefectures.regions.length);
   const japanVisits = getVisitsByCountry('japan');
   
-  // Prepare data for charts
-  const visitTypeData = Object.entries(RATING_LABELS).map(([rating, label]) => ({
-    name: label,
-    value: stats.ratingBreakdown[parseInt(rating) as VisitRating],
-    color: RATING_COLORS[parseInt(rating) as VisitRating],
-    rating: parseInt(rating)
-  })).filter(item => item.value > 0);
+  // Prepare star ratings data (only for prefectures eligible for ratings)
+  const starRatingsData = [];
+  const eligiblePrefectures = japanVisits
+    .filter(visit => visit.rating > 0) // Has visits
+    .reduce((acc, visit) => {
+      const highest = acc[visit.region_id] || 0;
+      acc[visit.region_id] = Math.max(highest, visit.rating);
+      return acc;
+    }, {} as Record<string, number>);
+    
+  // Only include prefectures with highest visit type 3+ (eligible for star ratings)
+  const eligibleForStars = Object.entries(eligiblePrefectures)
+    .filter(([, highestType]) => highestType >= 3)
+    .map(([regionId]) => regionId);
+    
+  // Count star ratings for eligible prefectures
+  for (let stars = 1; stars <= 5; stars++) {
+    const count = eligibleForStars.filter(regionId => {
+      const starRating = getPrefectureRating(regionId, 'japan');
+      return starRating === stars;
+    }).length;
+    
+    if (count > 0) {
+      starRatingsData.push({
+        stars,
+        count,
+        name: `${stars} Star${stars > 1 ? 's' : ''}`,
+        color: `hsl(${45 + stars * 15}, 70%, 50%)` // Gold gradient
+      });
+    }
+  }
 
   // Visits per year data (for timeline chart)
   const visitsByYear = japanVisits
@@ -104,6 +128,46 @@ export function StatsDashboard() {
     }, {} as Record<string, number>);
   
   const bestScore = Object.values(bestScoreByPrefecture).reduce((sum, rating) => sum + rating, 0);
+
+  // Region mapping (including Okinawa as Kyushu)
+  const regionMapping = {
+    'hokkaido': 'Hokkaido',
+    'aomori': 'Tohoku', 'iwate': 'Tohoku', 'miyagi': 'Tohoku', 'akita': 'Tohoku', 'yamagata': 'Tohoku', 'fukushima': 'Tohoku',
+    'ibaraki': 'Kanto', 'tochigi': 'Kanto', 'gunma': 'Kanto', 'saitama': 'Kanto', 'chiba': 'Kanto', 'tokyo': 'Kanto', 'kanagawa': 'Kanto',
+    'niigata': 'Chubu', 'toyama': 'Chubu', 'ishikawa': 'Chubu', 'fukui': 'Chubu', 'yamanashi': 'Chubu', 'nagano': 'Chubu', 'gifu': 'Chubu', 'shizuoka': 'Chubu', 'aichi': 'Chubu',
+    'mie': 'Kansai', 'shiga': 'Kansai', 'kyoto': 'Kansai', 'osaka': 'Kansai', 'hyogo': 'Kansai', 'nara': 'Kansai', 'wakayama': 'Kansai',
+    'tottori': 'Chugoku', 'shimane': 'Chugoku', 'okayama': 'Chugoku', 'hiroshima': 'Chugoku', 'yamaguchi': 'Chugoku',
+    'tokushima': 'Shikoku', 'kagawa': 'Shikoku', 'ehime': 'Shikoku', 'kochi': 'Shikoku',
+    'fukuoka': 'Kyushu', 'saga': 'Kyushu', 'nagasaki': 'Kyushu', 'kumamoto': 'Kyushu', 'oita': 'Kyushu', 'miyazaki': 'Kyushu', 'kagoshima': 'Kyushu', 'okinawa': 'Kyushu'
+  };
+
+  // Calculate region visit data
+  const regionVisitData = japanVisits
+    .filter(visit => visit.rating > 0)
+    .reduce((acc, visit) => {
+      const region = regionMapping[visit.region_id as keyof typeof regionMapping] || 'Unknown';
+      if (!acc[region]) {
+        acc[region] = new Set();
+      }
+      acc[region].add(visit.region_id);
+      return acc;
+    }, {} as Record<string, Set<string>>);
+
+  // Get all regions and their totals
+  const allRegions = ['Hokkaido', 'Tohoku', 'Kanto', 'Chubu', 'Kansai', 'Chugoku', 'Shikoku', 'Kyushu'];
+  
+  const regionTracker = allRegions.map(region => {
+    const total = Object.entries(regionMapping).filter(([, r]) => r === region).length;
+    const visited = regionVisitData[region]?.size || 0;
+    const percentage = Math.round((visited / total) * 100);
+    
+    return {
+      region,
+      visited,
+      total,
+      percentage
+    };
+  }).sort((a, b) => b.percentage - a.percentage);
 
   return (
     <div className="space-y-6">
@@ -207,30 +271,26 @@ export function StatsDashboard() {
         </Card>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Visit Types Pie Chart */}
+      {/* Charts Grid - 2x2 Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Star Ratings Chart */}
         <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base dark:text-gray-100">Visit Types</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100">Star Ratings</CardTitle>
           </CardHeader>
           <CardContent>
-            {visitTypeData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={visitTypeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {visitTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
+            {starRatingsData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={starRatingsData} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    height={30}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} width={25} axisLine={false} tickLine={false} />
                   <Tooltip 
                     formatter={(value: number, name: string) => [
                       `${value} prefecture${value !== 1 ? 's' : ''}`,
@@ -252,22 +312,27 @@ export function StatsDashboard() {
                       color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937'
                     }}
                   />
-                </PieChart>
+                  <Bar dataKey="count">
+                    {starRatingsData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-gray-500 dark:text-gray-400">
-                No visit data yet
+              <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400">
+                No star ratings yet
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 mt-4">
-              {visitTypeData.map((item, index) => (
+              {starRatingsData.map((item, index) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
                   <div 
                     className="w-3 h-3 rounded" 
                     style={{ backgroundColor: item.color }}
                   />
                   <span className="text-gray-600 dark:text-gray-300">{item.name}</span>
-                  <span className="font-medium dark:text-gray-200">{item.value}</span>
+                  <span className="font-medium dark:text-gray-200">{item.count}</span>
                 </div>
               ))}
             </div>
@@ -280,7 +345,7 @@ export function StatsDashboard() {
             <CardTitle className="text-base dark:text-gray-100">Types</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={ratingDistribution} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                 <XAxis 
@@ -329,7 +394,7 @@ export function StatsDashboard() {
               <CardTitle className="text-base dark:text-gray-100">By Year</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={yearlyData} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#9CA3AF' }} height={30} axisLine={false} tickLine={false} />
@@ -373,6 +438,45 @@ export function StatsDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Region Tracker - Fourth chart */}
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
+          <CardHeader>
+            <CardTitle className="text-base dark:text-gray-100">Regions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {regionTracker.map((region, index) => (
+                <div key={region.region} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100 w-16">
+                      {region.region}
+                    </span>
+                    <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${region.percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-3">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      {region.visited}/{region.total}
+                    </span>
+                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400 w-8 text-right">
+                      {region.percentage}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {regionTracker.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                  No regional data yet
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Additional Timeline Chart - if more than 3 years of data */}
