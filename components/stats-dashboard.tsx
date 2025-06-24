@@ -277,7 +277,7 @@ export function StatsDashboard() {
         {/* Rating Distribution Bar Chart */}
         <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base dark:text-gray-100">Ratings</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100">Types</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>

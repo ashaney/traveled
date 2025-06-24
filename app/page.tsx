@@ -433,7 +433,7 @@ export default function Home() {
 
               {/* Animated User Info */}
               <motion.div 
-                className="hidden sm:flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
+                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
                 onHoverStart={() => setIsUserHovered(true)}
                 onHoverEnd={() => setIsUserHovered(false)}
                 animate={{ width: isUserHovered ? "auto" : "40px" }}
@@ -452,7 +452,7 @@ export default function Home() {
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 px-3 whitespace-nowrap">{user?.email}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 px-3 whitespace-nowrap max-w-32 truncate">{user?.email}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
