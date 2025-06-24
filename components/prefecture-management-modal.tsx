@@ -196,29 +196,29 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
 
   return (
     <Dialog open={open} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto dark:bg-gray-800">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 dark:text-gray-100">
             <Calendar className="w-5 h-5" />
             <span>Manage Visits - {region.name}</span>
             {region.nameJapanese && (
-              <span className="text-sm text-muted-foreground font-normal">
+              <span className="text-sm text-muted-foreground dark:text-gray-400 font-normal">
                 ({region.nameJapanese})
               </span>
             )}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="dark:text-gray-300">
             Add, edit, or remove visits to {region.name} across different years.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Prefecture Star Rating */}
-          <div className="border rounded-lg p-4 bg-blue-50/50">
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-900/20">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Prefecture Rating</h3>
-                <p className="text-sm text-gray-600">Overall impression of {region.name}</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Prefecture Rating</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Overall impression of {region.name}</p>
               </div>
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }, (_, i) => (
@@ -236,7 +236,7 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
                 {prefectureStarRating > 0 && (
                   <button
                     onClick={() => setPrefectureStarRating(0)}
-                    className="ml-2 text-xs text-gray-500 hover:text-gray-700 underline"
+                    className="ml-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
                   >
                     Clear
                   </button>
@@ -246,26 +246,26 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
           </div>
 
           {/* Visits Table */}
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="w-24">Year</TableHead>
-                  <TableHead className="w-40">Visit Type</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
+                <TableRow className="bg-gray-50 dark:bg-gray-700">
+                  <TableHead className="w-24 dark:text-gray-200">Year</TableHead>
+                  <TableHead className="w-40 dark:text-gray-200">Visit Type</TableHead>
+                  <TableHead className="dark:text-gray-200">Notes</TableHead>
+                  <TableHead className="w-20 dark:text-gray-200">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {visits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
                       No visits recorded yet. Click &quot;Add Visit&quot; to get started!
                     </TableCell>
                   </TableRow>
                 ) : (
                   visits.map((visit) => (
-                    <TableRow key={visit.tempId}>
+                    <TableRow key={visit.tempId} className="dark:border-gray-600">
                       <TableCell>
                         <Input
                           type="number"
@@ -335,7 +335,7 @@ export function PrefectureManagementModal({ regionId, open, onClose }: Prefectur
           </Button>
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
               {error}
             </div>
           )}

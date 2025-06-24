@@ -9,11 +9,13 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTheme } from '@/contexts/ThemeContext'
 
 export default function LoginPage() {
   const supabase = createClient()
   const router = useRouter()
   const { user, loading } = useAuth()
+  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
     if (user) {
@@ -133,7 +135,7 @@ export default function LoginPage() {
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
                 <Image 
-                  src="/logo_with_text.png" 
+                  src={resolvedTheme === 'dark' ? '/logo_with_text_dark.png' : '/logo_with_text.png'}
                   alt="Traveled" 
                   width={353}
                   height={92}

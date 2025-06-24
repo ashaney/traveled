@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { japanPrefectures } from '@/data/japan';
 import { RATING_LABELS, RATING_COLORS, VisitRating } from '@/types';
 import { MapPin, Calendar, Trophy, TrendingUp, BarChart3, Crown, Repeat } from 'lucide-react';
@@ -10,6 +11,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 
 export function StatsDashboard() {
   const { getStats, getVisitsByCountry } = useSupabaseVisits();
+  const { resolvedTheme } = useTheme();
   const stats = getStats('japan', japanPrefectures.regions.length);
   const japanVisits = getVisitsByCountry('japan');
   
@@ -107,22 +109,22 @@ export function StatsDashboard() {
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
         <BarChart3 className="w-6 h-6 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-900">Travel Analytics</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Travel Analytics</h2>
       </div>
 
       {/* Stats Grid - 3x3 Layout */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Progress */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1">
                 <MapPin className="h-3 w-3 text-green-600" />
-                <span className="text-xs font-medium text-gray-600">Progress</span>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Progress</span>
               </div>
-              <span className="text-lg font-bold text-green-600">{stats.percentageVisited}%</span>
+              <span className="text-lg font-bold text-green-600 dark:text-green-400">{stats.percentageVisited}%</span>
             </div>
-            <p className="text-xs text-gray-600 mb-1">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               {stats.visitedRegions} of {stats.totalRegions}
             </p>
             <Progress value={stats.percentageVisited} className="h-1" />
@@ -130,14 +132,14 @@ export function StatsDashboard() {
         </Card>
 
         {/* Total Score */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1">
                 <Trophy className="h-3 w-3 text-yellow-600" />
-                <span className="text-xs font-medium text-gray-600">Total Score</span>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Total Score</span>
               </div>
-              <span className="text-lg font-bold text-yellow-600">{totalScore}</span>
+              <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{totalScore}</span>
             </div>
             <p className="text-xs text-gray-600">
               Avg: {averageRating.toFixed(1)}
@@ -146,14 +148,14 @@ export function StatsDashboard() {
         </Card>
 
         {/* Best Score */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-1">
                 <Crown className="h-3 w-3 text-orange-600" />
-                <span className="text-xs font-medium text-gray-600">Best Score</span>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Best Score</span>
               </div>
-              <span className="text-lg font-bold text-orange-600">{bestScore}</span>
+              <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{bestScore}</span>
             </div>
             <p className="text-xs text-gray-600">
               Peak score per prefecture
@@ -162,26 +164,26 @@ export function StatsDashboard() {
         </Card>
 
         {/* Total Visits */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-1 mb-1">
               <TrendingUp className="h-3 w-3 text-blue-600" />
-              <span className="text-xs font-medium text-gray-600">Total Visits</span>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Total Visits</span>
             </div>
-            <div className="text-lg font-bold text-blue-600">
+            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
               {japanVisits.filter(v => v.rating > 0).length}
             </div>
           </CardContent>
         </Card>
 
         {/* This Year */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-1 mb-1">
               <Calendar className="h-3 w-3 text-purple-600" />
-              <span className="text-xs font-medium text-gray-600">This Year</span>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">This Year</span>
             </div>
-            <div className="text-lg font-bold text-purple-600">
+            <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
               {visitsThisYear}
             </div>
             <p className="text-xs text-gray-600">visits in {currentYear}</p>
@@ -189,13 +191,13 @@ export function StatsDashboard() {
         </Card>
 
         {/* Most Visited Prefecture */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardContent className="p-3">
             <div className="flex items-center gap-1 mb-1">
               <Repeat className="h-3 w-3 text-emerald-600" />
-              <span className="text-xs font-medium text-gray-600">Most Visited</span>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Most Visited</span>
             </div>
-            <div className="text-sm font-bold text-emerald-600 truncate">
+            <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400 truncate">
               {mostVisitedPrefecture?.name || 'None yet'}
             </div>
             <p className="text-xs text-gray-600">
@@ -208,9 +210,9 @@ export function StatsDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Visit Types Pie Chart */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base">Visit Types</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100">Visit Types</CardTitle>
           </CardHeader>
           <CardContent>
             {visitTypeData.length > 0 ? (
@@ -234,11 +236,23 @@ export function StatsDashboard() {
                       `${value} prefecture${value !== 1 ? 's' : ''}`,
                       name
                     ]}
+                    contentStyle={{
+                      backgroundColor: resolvedTheme === 'dark' ? '#1F2937' : '#FFFFFF',
+                      border: resolvedTheme === 'dark' ? 'none' : '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937',
+                      boxShadow: resolvedTheme === 'dark' 
+                        ? '0 10px 15px -3px rgba(0, 0, 0, 0.5)' 
+                        : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                    labelStyle={{
+                      color: resolvedTheme === 'dark' ? '#FFFFFF' : '#6B7280'
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-gray-500">
+              <div className="h-[200px] flex items-center justify-center text-gray-500 dark:text-gray-400">
                 No visit data yet
               </div>
             )}
@@ -249,8 +263,8 @@ export function StatsDashboard() {
                     className="w-3 h-3 rounded" 
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="text-gray-600">{item.name}</span>
-                  <span className="font-medium">{item.value}</span>
+                  <span className="text-gray-600 dark:text-gray-300">{item.name}</span>
+                  <span className="font-medium dark:text-gray-200">{item.value}</span>
                 </div>
               ))}
             </div>
@@ -258,25 +272,39 @@ export function StatsDashboard() {
         </Card>
 
         {/* Rating Distribution Bar Chart */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-base">Ratings</CardTitle>
+            <CardTitle className="text-base dark:text-gray-100">Ratings</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={ratingDistribution} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                 <XAxis 
                   dataKey="name" 
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 10, fill: '#9CA3AF' }}
                   height={30}
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <YAxis tick={{ fontSize: 10 }} width={25} />
+                <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} width={25} axisLine={false} tickLine={false} />
                 <Tooltip 
                   formatter={(value: number, name: string) => [
                     `${value} prefecture${value !== 1 ? 's' : ''}`,
                     name
                   ]}
+                  contentStyle={{
+                    backgroundColor: resolvedTheme === 'dark' ? '#374151' : '#FFFFFF',
+                    border: resolvedTheme === 'dark' ? 'none' : '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    color: resolvedTheme === 'dark' ? '#F3F4F6' : '#1F2937',
+                    boxShadow: resolvedTheme === 'dark' 
+                      ? '0 10px 15px -3px rgba(0, 0, 0, 0.3)' 
+                      : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  labelStyle={{
+                    color: resolvedTheme === 'dark' ? '#D1D5DB' : '#6B7280'
+                  }}
                 />
                 <Bar dataKey="count">
                   {ratingDistribution.map((entry, index) => (
@@ -290,21 +318,33 @@ export function StatsDashboard() {
 
         {/* Visits by Year - Third chart */}
         {yearlyData.length > 0 && (
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm dark:bg-gray-800">
             <CardHeader>
-              <CardTitle className="text-base">By Year</CardTitle>
+              <CardTitle className="text-base dark:text-gray-100">By Year</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={yearlyData} margin={{ top: 5, right: 15, left: 10, bottom: 35 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" tick={{ fontSize: 10 }} height={30} />
-                  <YAxis tick={{ fontSize: 10 }} width={25} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                  <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#9CA3AF' }} height={30} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} width={25} axisLine={false} tickLine={false} />
                   <Tooltip 
                     formatter={(value: number, name: string) => [
                       `${value} visit${value !== 1 ? 's' : ''}`,
                       name === 'visits' ? 'Total Visits' : 'New Prefectures'
                     ]}
+                    contentStyle={{
+                      backgroundColor: resolvedTheme === 'dark' ? '#1F2937' : '#FFFFFF',
+                      border: resolvedTheme === 'dark' ? 'none' : '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      color: resolvedTheme === 'dark' ? '#FFFFFF' : '#1F2937',
+                      boxShadow: resolvedTheme === 'dark' 
+                        ? '0 10px 15px -3px rgba(0, 0, 0, 0.5)' 
+                        : '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                    labelStyle={{
+                      color: resolvedTheme === 'dark' ? '#FFFFFF' : '#6B7280'
+                    }}
                   />
                   <Area 
                     type="monotone" 
@@ -332,14 +372,14 @@ export function StatsDashboard() {
       {/* Additional Timeline Chart - if more than 3 years of data */}
       {yearlyData.length > 2 && (
         <div className="grid grid-cols-1 gap-4">
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm dark:bg-gray-800">
             <CardHeader>
               <CardTitle className="text-base">Cumulative Progress</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={cumulativeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis dataKey="year" />
                   <YAxis />
                   <Tooltip 

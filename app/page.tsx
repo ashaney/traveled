@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { LogOut, User, MapPin, Table, ExternalLink } from "lucide-react";
+import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
 import confetti from 'canvas-confetti';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
 import { VisitTable } from '@/components/visit-table';
@@ -25,10 +26,12 @@ export default function Home() {
   const [isCountryHovered, setIsCountryHovered] = useState(false);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isSignOutHovered, setIsSignOutHovered] = useState(false);
+  const [isThemeHovered, setIsThemeHovered] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const handleLogoClick = useCallback(() => {
     const newCount = logoClickCount + 1;
@@ -99,22 +102,22 @@ export default function Home() {
 
   if (loading || visitsLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
+    <div className="min-h-screen bg-gray-50/30 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-white via-white to-gray-50/30 border-b border-gray-200/60 shadow-sm backdrop-blur-sm">
+      <div className="bg-gradient-to-r from-white via-white to-gray-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-gray-900/30 border-b border-gray-200/60 dark:border-gray-700/60 shadow-sm backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-5">
             {/* Logo Section */}
             <div className="flex items-center">
               <Image 
-                src="/logo_with_text.png" 
+                src={resolvedTheme === 'dark' ? '/logo_with_text_dark.png' : '/logo_with_text.png'}
                 alt="Traveled" 
                 width={208}
                 height={55}
@@ -174,17 +177,62 @@ export default function Home() {
                 </AnimatePresence>
               </motion.div>
 
+              {/* Animated Theme Toggle */}
+              <motion.div
+                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
+                onHoverStart={() => setIsThemeHovered(true)}
+                onHoverEnd={() => setIsThemeHovered(false)}
+                animate={{ width: isThemeHovered ? "auto" : "40px" }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                onClick={() => {
+                  const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+                  const currentIndex = themes.indexOf(theme);
+                  const nextTheme = themes[(currentIndex + 1) % themes.length];
+                  setTheme(nextTheme);
+                }}
+              >
+                <div className={`flex items-center justify-center w-10 h-10 rounded-l-lg ${
+                  theme === 'light' 
+                    ? 'bg-yellow-100 dark:bg-yellow-900/50' 
+                    : 'bg-blue-100 dark:bg-blue-900/50'
+                }`}>
+                  {theme === 'light' && <Sun className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />}
+                  {theme === 'dark' && <Moon className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                  {theme === 'system' && <Monitor className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                </div>
+                <AnimatePresence>
+                  {isThemeHovered && (
+                    <motion.div
+                      className="flex items-center h-full"
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <span className={`text-sm font-medium px-3 whitespace-nowrap capitalize ${
+                        theme === 'light'
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-blue-600 dark:text-blue-400'
+                      }`}>
+                        {theme === 'system' ? 'Auto' : theme}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
               {/* Animated User Info */}
               <motion.div 
-                className="hidden sm:flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm"
+                className="hidden sm:flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
                 onHoverStart={() => setIsUserHovered(true)}
                 onHoverEnd={() => setIsUserHovered(false)}
                 animate={{ width: isUserHovered ? "auto" : "40px" }}
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
               >
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-l-lg">
-                  <User className="w-4 h-4 text-blue-600" />
+                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-l-lg">
+                  <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <AnimatePresence>
                   {isUserHovered && (
@@ -195,7 +243,7 @@ export default function Home() {
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      <span className="text-sm font-medium text-gray-700 px-3 whitespace-nowrap">{user?.email}</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 px-3 whitespace-nowrap">{user?.email}</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -203,7 +251,7 @@ export default function Home() {
 
               {/* Animated Sign Out Button */}
               <motion.div
-                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm"
+                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
                 onHoverStart={() => setIsSignOutHovered(true)}
                 onHoverEnd={() => setIsSignOutHovered(false)}
                 animate={{ width: isSignOutHovered ? "auto" : "40px" }}
@@ -211,8 +259,8 @@ export default function Home() {
                 whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                 onClick={signOut}
               >
-                <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-l-lg">
-                  <LogOut className="w-4 h-4 text-red-600" />
+                <div className="flex items-center justify-center w-10 h-10 bg-red-100 dark:bg-red-900/50 rounded-l-lg">
+                  <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
                 </div>
                 <AnimatePresence>
                   {isSignOutHovered && (
@@ -223,7 +271,7 @@ export default function Home() {
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      <span className="text-sm font-medium text-red-600 px-3 whitespace-nowrap">Sign Out</span>
+                      <span className="text-sm font-medium text-red-600 dark:text-red-400 px-3 whitespace-nowrap">Sign Out</span>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -241,37 +289,37 @@ export default function Home() {
             <section id="map-section" className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <MapPin className="w-6 h-6 text-blue-600" />
-                <h2 className="text-2xl font-bold text-gray-900">Explore the Map</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Explore the Map</h2>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">Click any region to track visits</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Click any region to track visits</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow-sm border-0 p-3">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border-0 p-3">
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-6 text-sm mb-4 px-4">
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                    <span className="text-gray-600">Never been</span>
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-600 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Never been</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-red-200 rounded"></div>
-                    <span className="text-gray-600">Passed through</span>
+                    <div className="w-4 h-4 bg-red-200 dark:bg-red-800 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Passed through</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-orange-200 rounded"></div>
-                    <span className="text-gray-600">Brief stop</span>
+                    <div className="w-4 h-4 bg-orange-200 dark:bg-orange-800 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Brief stop</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-                    <span className="text-gray-600">Day visit</span>
+                    <div className="w-4 h-4 bg-yellow-200 dark:bg-yellow-800 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Day visit</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-green-200 rounded"></div>
-                    <span className="text-gray-600">Multi-day stay</span>
+                    <div className="w-4 h-4 bg-green-200 dark:bg-green-800 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Multi-day stay</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 bg-blue-200 rounded"></div>
-                    <span className="text-gray-600">Lived there</span>
+                    <div className="w-4 h-4 bg-blue-200 dark:bg-blue-800 rounded"></div>
+                    <span className="text-gray-600 dark:text-gray-400">Lived there</span>
                   </div>
                 </div>
 
@@ -295,7 +343,7 @@ export default function Home() {
         <section id="table-section">
           <div className="flex items-center gap-2 mb-6">
             <Table className="w-6 h-6 text-blue-600" />
-            <h2 className="text-2xl font-bold text-gray-900">Visit Records</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Visit Records</h2>
           </div>
           <VisitTable onManagePrefecture={handleManagePrefecture} />
         </section>

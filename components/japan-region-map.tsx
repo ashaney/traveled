@@ -144,24 +144,24 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
         <div className="flex flex-col gap-1">
           <button
             onClick={handleZoomIn}
-            className="p-2 bg-white/90 hover:bg-white border border-gray-300 rounded-md shadow-sm transition-colors"
+            className="p-2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm transition-colors"
             title="Zoom In"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
           <button
             onClick={handleZoomOut}
-            className="p-2 bg-white/90 hover:bg-white border border-gray-300 rounded-md shadow-sm transition-colors"
+            className="p-2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm transition-colors"
             title="Zoom Out"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
           <button
             onClick={handleReset}
-            className="p-2 bg-white/90 hover:bg-white border border-gray-300 rounded-md shadow-sm transition-colors"
+            className="p-2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm transition-colors"
             title="Reset View"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
         </div>
         
@@ -227,13 +227,13 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
 
       {/* Active Filters Indicator */}
       {hasActiveFilters && (
-        <div className="absolute bottom-4 left-4 bg-blue-100 border border-blue-300 text-blue-800 px-3 py-2 rounded-lg text-sm font-medium shadow-lg z-10">
+        <div className="absolute bottom-4 left-4 bg-blue-100 dark:bg-blue-900/80 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200 px-3 py-2 rounded-lg text-sm font-medium shadow-lg z-10">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4" />
             <span>Filters active:</span>
             {filters.year && <span className="bg-blue-200 px-2 py-1 rounded text-xs">{filters.year}</span>}
             {filters.visitType !== undefined && (
-              <span className="bg-blue-200 px-2 py-1 rounded text-xs">
+              <span className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
                 {RATING_LABELS[filters.visitType]}
               </span>
             )}

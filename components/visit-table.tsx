@@ -170,7 +170,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
 
   if (mostRecentVisits.length === 0) {
     return (
-      <Card className="border-0 shadow-sm">
+      <Card className="border-0 shadow-sm dark:bg-gray-800">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -189,7 +189,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
   }
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm dark:bg-gray-800">
       <CardHeader>
         {/* Search and Filter Controls */}
         <div className="flex gap-4 items-center justify-between">
@@ -241,7 +241,7 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
           <div className="overflow-y-auto max-h-96" style={{ scrollbarGutter: 'stable' }}>
             <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50/50">
+              <TableRow className="bg-gray-50/50 dark:bg-gray-700/50">
                 <TableHead 
                   className="font-semibold w-36 cursor-pointer hover:bg-gray-50"
                   onClick={() => handleSort('region')}
@@ -296,18 +296,18 @@ export function VisitTable({ onManagePrefecture }: VisitTableProps) {
                     <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </TableHead>
-                <TableHead className="font-semibold text-right w-20">Actions</TableHead>
+                <TableHead className="font-semibold text-right w-20 dark:text-gray-100">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedVisits.map((visit) => {
                 const overallRating = getPrefectureStarRating(visit.region_id);
                 return (
-                <TableRow key={visit.region_id} className="hover:bg-gray-50/50">
+                <TableRow key={visit.region_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/50">
                   <TableCell className="font-medium">
                     <button
                       onClick={() => onManagePrefecture?.(visit.region_id)}
-                      className="text-gray-900 hover:text-blue-600 hover:underline font-medium text-left"
+                      className="text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 hover:underline font-medium text-left"
                     >
                       {getRegionName(visit.region_id)}
                     </button>
