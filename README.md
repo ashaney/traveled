@@ -1,6 +1,6 @@
-# Traveled - Japan Travel Tracker
+# Traveled - Travel Tracker
 
-A modern travel tracking application that allows travelers to Japan to record, visualize, and analyze their travel experiences across all 47 prefectures.
+A modern travel tracking application that allows travelers to record, visualize, and analyze their travel experiences. Currently supporting Japan's 47 prefectures, with plans to expand to additional countries including the USA.
 
 ## ✨ Features
 
@@ -42,6 +42,7 @@ Our system uses 6 distinct experience levels:
 - **Data persistence**: All data securely stored with user authentication
 - **Responsive design**: Works seamlessly on desktop, tablet, and mobile
 - **Real-time sync**: Changes reflected instantly across all views
+- **Multi-country support**: Currently Japan, with USA and other countries coming soon
 
 ## 🛠️ Technology Stack
 
@@ -120,4 +121,6 @@ Contributions are welcome! Please feel free to submit pull requests, report bugs
 
 ---
 
-**Start tracking your Japan adventures today and see your travel story come to life!** 🇯🇵✈️
+**Start tracking your travel adventures today and see your travel story come to life!** 🗺️✈️
+
+*Currently featuring Japan 🇯🇵 | USA 🇺🇸 coming soon!*
