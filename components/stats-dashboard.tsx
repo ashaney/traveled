@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -45,176 +45,202 @@ export function StatsDashboard() {
   const japanVisits = getVisitsByCountry('japan');
   const [detailModal, setDetailModal] = useState<DetailModalData | null>(null);
   
-  // Prepare star ratings data (only for prefectures eligible for ratings)
-  const starRatingsData: Array<{
-    stars: number;
-    count: number;
-    name: string;
-    color: string;
-  }> = [];
-  const eligiblePrefectures = japanVisits
-    .filter(visit => visit.rating > 0) // Has visits
-    .reduce((acc, visit) => {
-      const highest = acc[visit.region_id] || 0;
-      acc[visit.region_id] = Math.max(highest, visit.rating);
-      return acc;
-    }, {} as Record<string, number>);
+  // Memoize expensive star ratings calculation
+  const starRatingsData = useMemo(() => {
+    const starData: Array<{
+      stars: number;
+      count: number;
+      name: string;
+      color: string;
+    }> = [];
     
-  // Only include prefectures with highest visit type 3+ (eligible for star ratings)
-  const eligibleForStars = Object.entries(eligiblePrefectures)
-    .filter(([, highestType]) => highestType >= 3)
-    .map(([regionId]) => regionId);
-    
-  // Count star ratings for eligible prefectures
-  for (let stars = 1; stars <= 5; stars++) {
-    const count = eligibleForStars.filter(regionId => {
-      const starRating = getPrefectureRating(regionId, 'japan');
-      return starRating === stars;
-    }).length;
-    
-    if (count > 0) {
-      starRatingsData.push({
-        stars,
-        count,
-        name: `${stars} Star${stars > 1 ? 's' : ''}`,
-        color: `hsl(${45 + stars * 15}, 70%, 50%)` // Gold gradient
-      });
+    const eligiblePrefectures = japanVisits
+      .filter(visit => visit.rating > 0) // Has visits
+      .reduce((acc, visit) => {
+        const highest = acc[visit.region_id] || 0;
+        acc[visit.region_id] = Math.max(highest, visit.rating);
+        return acc;
+      }, {} as Record<string, number>);
+      
+    // Only include prefectures with highest visit type 3+ (eligible for star ratings)
+    const eligibleForStars = Object.entries(eligiblePrefectures)
+      .filter(([, highestType]) => highestType >= 3)
+      .map(([regionId]) => regionId);
+      
+    // Count star ratings for eligible prefectures
+    for (let stars = 1; stars <= 5; stars++) {
+      const count = eligibleForStars.filter(regionId => {
+        const starRating = getPrefectureRating(regionId, 'japan');
+        return starRating === stars;
+      }).length;
+      
+      if (count > 0) {
+        starData.push({
+          stars,
+          count,
+          name: `${stars} Star${stars > 1 ? 's' : ''}`,
+          color: `hsl(${45 + stars * 15}, 70%, 50%)` // Gold gradient
+        });
+      }
     }
-  }
-
-  // Visits per year data (for timeline chart)
-  const visitsByYear = japanVisits
-    .filter(visit => visit.rating > 0) // Exclude "Never been"
-    .reduce((acc, visit) => {
-      const year = visit.visit_year;
-      if (!acc[year]) {
-        acc[year] = { year, visits: 0, newPrefectures: 0 };
-      }
-      acc[year].visits++;
-      return acc;
-    }, {} as Record<number, { year: number; visits: number; newPrefectures: number }>);
-
-  // Calculate new prefectures per year (first-time visits)
-  const prefectureFirstVisits = new Map<string, number>();
-  japanVisits
-    .filter(visit => visit.rating > 0)
-    .sort((a, b) => a.visit_year - b.visit_year)
-    .forEach(visit => {
-      if (!prefectureFirstVisits.has(visit.region_id)) {
-        prefectureFirstVisits.set(visit.region_id, visit.visit_year);
-        if (visitsByYear[visit.visit_year]) {
-          visitsByYear[visit.visit_year].newPrefectures++;
-        }
-      }
-    });
-
-  const yearlyData = Object.values(visitsByYear).sort((a, b) => a.year - b.year);
-
-  // Rating distribution for bar chart
-  const ratingDistribution = Object.entries(RATING_LABELS).map(([rating, label]) => ({
-    name: label.split(' ')[0], // Shorter labels for chart
-    count: stats.ratingBreakdown[parseInt(rating) as VisitRating],
-    color: RATING_COLORS[parseInt(rating) as VisitRating],
-    fullName: label
-  }));
-
-  // Calculate total score and average rating
-  const actualVisits = japanVisits.filter(visit => visit.rating > 0);
-  const totalScore = actualVisits.reduce((sum, visit) => sum + visit.rating, 0);
-  const averageRating = actualVisits.length > 0 ? totalScore / actualVisits.length : 0;
-
-  // Cumulative prefectures over time
-  const cumulativeData: { year: number; total: number }[] = [];
-  let runningTotal = 0;
-  yearlyData.forEach(yearData => {
-    runningTotal += yearData.newPrefectures;
-    cumulativeData.push({ year: yearData.year, total: runningTotal });
-  });
-
-  // Calculate most visited prefecture
-  const visitCounts = japanVisits
-    .filter(visit => visit.rating > 0)
-    .reduce((acc, visit) => {
-      acc[visit.region_id] = (acc[visit.region_id] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-  const mostVisitedEntry = Object.entries(visitCounts)
-    .sort(([,a], [,b]) => b - a)[0];
-  
-  const mostVisitedPrefecture = mostVisitedEntry ? {
-    name: japanPrefectures.regions.find(r => r.id === mostVisitedEntry[0])?.name || mostVisitedEntry[0],
-    count: mostVisitedEntry[1]
-  } : null;
-
-  // Calculate exploration rate (prefectures visited this year vs total)
-  const currentYear = new Date().getFullYear();
-  const visitsThisYear = japanVisits.filter(visit => 
-    visit.rating > 0 && visit.visit_year === currentYear
-  ).length;
-
-  // Calculate best score (highest rating per prefecture, counted once)
-  const bestScoreByPrefecture = japanVisits
-    .filter(visit => visit.rating > 0)
-    .reduce((acc, visit) => {
-      const currentBest = acc[visit.region_id] || 0;
-      acc[visit.region_id] = Math.max(currentBest, visit.rating);
-      return acc;
-    }, {} as Record<string, number>);
-  
-  const bestScore = Object.values(bestScoreByPrefecture).reduce((sum, rating) => sum + rating, 0);
-
-  // Region mapping (including Okinawa as Kyushu)
-  const regionMapping = {
-    'hokkaido': 'Hokkaido',
-    'aomori': 'Tohoku', 'iwate': 'Tohoku', 'miyagi': 'Tohoku', 'akita': 'Tohoku', 'yamagata': 'Tohoku', 'fukushima': 'Tohoku',
-    'ibaraki': 'Kanto', 'tochigi': 'Kanto', 'gunma': 'Kanto', 'saitama': 'Kanto', 'chiba': 'Kanto', 'tokyo': 'Kanto', 'kanagawa': 'Kanto',
-    'niigata': 'Chubu', 'toyama': 'Chubu', 'ishikawa': 'Chubu', 'fukui': 'Chubu', 'yamanashi': 'Chubu', 'nagano': 'Chubu', 'gifu': 'Chubu', 'shizuoka': 'Chubu', 'aichi': 'Chubu',
-    'mie': 'Kansai', 'shiga': 'Kansai', 'kyoto': 'Kansai', 'osaka': 'Kansai', 'hyogo': 'Kansai', 'nara': 'Kansai', 'wakayama': 'Kansai',
-    'tottori': 'Chugoku', 'shimane': 'Chugoku', 'okayama': 'Chugoku', 'hiroshima': 'Chugoku', 'yamaguchi': 'Chugoku',
-    'tokushima': 'Shikoku', 'kagawa': 'Shikoku', 'ehime': 'Shikoku', 'kochi': 'Shikoku',
-    'fukuoka': 'Kyushu', 'saga': 'Kyushu', 'nagasaki': 'Kyushu', 'kumamoto': 'Kyushu', 'oita': 'Kyushu', 'miyazaki': 'Kyushu', 'kagoshima': 'Kyushu', 'okinawa': 'Kyushu'
-  };
-
-  // Calculate region visit data
-  const regionVisitData = japanVisits
-    .filter(visit => visit.rating > 0)
-    .reduce((acc, visit) => {
-      const region = regionMapping[visit.region_id as keyof typeof regionMapping] || 'Unknown';
-      if (!acc[region]) {
-        acc[region] = new Set();
-      }
-      acc[region].add(visit.region_id);
-      return acc;
-    }, {} as Record<string, Set<string>>);
-
-  // Get all regions and their totals
-  const allRegions = ['Hokkaido', 'Tohoku', 'Kanto', 'Chubu', 'Kansai', 'Chugoku', 'Shikoku', 'Kyushu'];
-  
-  const regionTracker = allRegions.map(region => {
-    const total = Object.entries(regionMapping).filter(([, r]) => r === region).length;
-    const visited = regionVisitData[region]?.size || 0;
-    const percentage = Math.round((visited / total) * 100);
     
-    return {
-      region,
-      visited,
-      total,
-      percentage
+    return { starData, eligibleForStars };
+  }, [japanVisits, getPrefectureRating]);
+
+  // Memoize yearly data calculations
+  const yearlyData = useMemo(() => {
+    const visitsByYear = japanVisits
+      .filter(visit => visit.rating > 0) // Exclude "Never been"
+      .reduce((acc, visit) => {
+        const year = visit.visit_year;
+        if (!acc[year]) {
+          acc[year] = { year, visits: 0, newPrefectures: 0 };
+        }
+        acc[year].visits++;
+        return acc;
+      }, {} as Record<number, { year: number; visits: number; newPrefectures: number }>);
+
+    // Calculate new prefectures per year (first-time visits)
+    const prefectureFirstVisits = new Map<string, number>();
+    japanVisits
+      .filter(visit => visit.rating > 0)
+      .sort((a, b) => a.visit_year - b.visit_year)
+      .forEach(visit => {
+        if (!prefectureFirstVisits.has(visit.region_id)) {
+          prefectureFirstVisits.set(visit.region_id, visit.visit_year);
+          if (visitsByYear[visit.visit_year]) {
+            visitsByYear[visit.visit_year].newPrefectures++;
+          }
+        }
+      });
+
+    return Object.values(visitsByYear).sort((a, b) => a.year - b.year);
+  }, [japanVisits]);
+
+  // Memoize rating distribution
+  const ratingDistribution = useMemo(() => 
+    Object.entries(RATING_LABELS).map(([rating, label]) => ({
+      name: label.split(' ')[0], // Shorter labels for chart
+      count: stats.ratingBreakdown[parseInt(rating) as VisitRating],
+      color: RATING_COLORS[parseInt(rating) as VisitRating],
+      fullName: label
+    })), [stats.ratingBreakdown]);
+
+  // Memoize score calculations
+  const scoreData = useMemo(() => {
+    const actualVisits = japanVisits.filter(visit => visit.rating > 0);
+    const totalScore = actualVisits.reduce((sum, visit) => sum + visit.rating, 0);
+    const averageRating = actualVisits.length > 0 ? totalScore / actualVisits.length : 0;
+
+    // Calculate best score (highest rating per prefecture, counted once)
+    const bestScoreByPrefecture = japanVisits
+      .filter(visit => visit.rating > 0)
+      .reduce((acc, visit) => {
+        const currentBest = acc[visit.region_id] || 0;
+        acc[visit.region_id] = Math.max(currentBest, visit.rating);
+        return acc;
+      }, {} as Record<string, number>);
+    
+    const bestScore = Object.values(bestScoreByPrefecture).reduce((sum, rating) => sum + rating, 0);
+
+    return { totalScore, averageRating, bestScore };
+  }, [japanVisits]);
+
+  // Memoize cumulative data
+  const cumulativeData = useMemo(() => {
+    const data: { year: number; total: number }[] = [];
+    let runningTotal = 0;
+    yearlyData.forEach(yearData => {
+      runningTotal += yearData.newPrefectures;
+      data.push({ year: yearData.year, total: runningTotal });
+    });
+    return data;
+  }, [yearlyData]);
+
+  // Memoize most visited prefecture calculation
+  const mostVisitedPrefecture = useMemo(() => {
+    const visitCounts = japanVisits
+      .filter(visit => visit.rating > 0)
+      .reduce((acc, visit) => {
+        acc[visit.region_id] = (acc[visit.region_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+    const mostVisitedEntry = Object.entries(visitCounts)
+      .sort(([,a], [,b]) => b - a)[0];
+    
+    return mostVisitedEntry ? {
+      name: japanPrefectures.regions.find(r => r.id === mostVisitedEntry[0])?.name || mostVisitedEntry[0],
+      count: mostVisitedEntry[1]
+    } : null;
+  }, [japanVisits]);
+
+  // Get current year
+  const currentYear = new Date().getFullYear();
+  
+  // Memoize visits this year
+  const visitsThisYear = useMemo(() => {
+    return japanVisits.filter(visit => 
+      visit.rating > 0 && visit.visit_year === currentYear
+    ).length;
+  }, [japanVisits, currentYear]);
+
+  // Memoize region calculations
+  const regionData = useMemo(() => {
+    // Region mapping (including Okinawa as Kyushu)
+    const regionMapping = {
+      'hokkaido': 'Hokkaido',
+      'aomori': 'Tohoku', 'iwate': 'Tohoku', 'miyagi': 'Tohoku', 'akita': 'Tohoku', 'yamagata': 'Tohoku', 'fukushima': 'Tohoku',
+      'ibaraki': 'Kanto', 'tochigi': 'Kanto', 'gunma': 'Kanto', 'saitama': 'Kanto', 'chiba': 'Kanto', 'tokyo': 'Kanto', 'kanagawa': 'Kanto',
+      'niigata': 'Chubu', 'toyama': 'Chubu', 'ishikawa': 'Chubu', 'fukui': 'Chubu', 'yamanashi': 'Chubu', 'nagano': 'Chubu', 'gifu': 'Chubu', 'shizuoka': 'Chubu', 'aichi': 'Chubu',
+      'mie': 'Kansai', 'shiga': 'Kansai', 'kyoto': 'Kansai', 'osaka': 'Kansai', 'hyogo': 'Kansai', 'nara': 'Kansai', 'wakayama': 'Kansai',
+      'tottori': 'Chugoku', 'shimane': 'Chugoku', 'okayama': 'Chugoku', 'hiroshima': 'Chugoku', 'yamaguchi': 'Chugoku',
+      'tokushima': 'Shikoku', 'kagawa': 'Shikoku', 'ehime': 'Shikoku', 'kochi': 'Shikoku',
+      'fukuoka': 'Kyushu', 'saga': 'Kyushu', 'nagasaki': 'Kyushu', 'kumamoto': 'Kyushu', 'oita': 'Kyushu', 'miyazaki': 'Kyushu', 'kagoshima': 'Kyushu', 'okinawa': 'Kyushu'
     };
-  }).sort((a, b) => b.percentage - a.percentage);
+
+    // Calculate region visit data
+    const regionVisitData = japanVisits
+      .filter(visit => visit.rating > 0)
+      .reduce((acc, visit) => {
+        const region = regionMapping[visit.region_id as keyof typeof regionMapping] || 'Unknown';
+        if (!acc[region]) {
+          acc[region] = new Set();
+        }
+        acc[region].add(visit.region_id);
+        return acc;
+      }, {} as Record<string, Set<string>>);
+
+    // Get all regions and their totals
+    const allRegions = ['Hokkaido', 'Tohoku', 'Kanto', 'Chubu', 'Kansai', 'Chugoku', 'Shikoku', 'Kyushu'];
+    
+    const regionTracker = allRegions.map(region => {
+      const total = Object.entries(regionMapping).filter(([, r]) => r === region).length;
+      const visited = regionVisitData[region]?.size || 0;
+      const percentage = Math.round((visited / total) * 100);
+      
+      return {
+        region,
+        visited,
+        total,
+        percentage
+      };
+    }).sort((a, b) => b.percentage - a.percentage);
+
+    return { regionMapping, regionVisitData, regionTracker };
+  }, [japanVisits]);
 
   // Interactive chart handlers using BarChart onClick
   const handleStarRatingChartClick = (data: RechartsClickData) => {
     if (data.activeIndex === undefined || data.activeIndex === null) return;
     
     const index = typeof data.activeIndex === 'string' ? parseInt(data.activeIndex) : data.activeIndex;
-    const clickedData = starRatingsData[index];
+    const clickedData = starRatingsData.starData[index];
     
     if (!clickedData) return;
     
     const starLevel = clickedData.stars;
-    const prefecturesWithThisRating = eligibleForStars
+    const prefecturesWithThisRating = starRatingsData.eligibleForStars
       .filter(regionId => getPrefectureRating(regionId, 'japan') === starLevel)
       .map(regionId => {
         const prefecture = japanPrefectures.regions.find(r => r.id === regionId);
@@ -270,14 +296,14 @@ export function StatsDashboard() {
   };
 
   const handleRegionClick = (regionName: string) => {
-    const region = regionTracker.find(r => r.region === regionName);
+    const region = regionData.regionTracker.find(r => r.region === regionName);
     if (!region) return;
 
-    const regionPrefectures = Object.entries(regionMapping)
+    const regionPrefectures = Object.entries(regionData.regionMapping)
       .filter(([, r]) => r === regionName)
       .map(([prefectureId]) => {
         const prefecture = japanPrefectures.regions.find(r => r.id === prefectureId);
-        const hasVisits = regionVisitData[regionName]?.has(prefectureId) || false;
+        const hasVisits = regionData.regionVisitData[regionName]?.has(prefectureId) || false;
         return {
           id: prefectureId,
           name: prefecture?.name || prefectureId,
@@ -327,10 +353,10 @@ export function StatsDashboard() {
                 <Trophy className="h-3 w-3 text-yellow-600" />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Total Score</span>
               </div>
-              <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{totalScore}</span>
+              <span className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{scoreData.totalScore}</span>
             </div>
             <p className="text-xs text-gray-600">
-              Avg: {averageRating.toFixed(1)}
+              Avg: {scoreData.averageRating.toFixed(1)}
             </p>
           </CardContent>
         </Card>
@@ -343,7 +369,7 @@ export function StatsDashboard() {
                 <Crown className="h-3 w-3 text-orange-600" />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Best Score</span>
               </div>
-              <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{bestScore}</span>
+              <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{scoreData.bestScore}</span>
             </div>
             <p className="text-xs text-gray-600">
               Peak score per prefecture
@@ -406,10 +432,10 @@ export function StatsDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {starRatingsData.length > 0 ? (
+            {starRatingsData.starData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart 
-                  data={starRatingsData} 
+                  data={starRatingsData.starData} 
                   margin={{ top: 5, right: 15, left: 10, bottom: 35 }}
                   onClick={handleStarRatingChartClick}
                   className="cursor-pointer"
@@ -445,7 +471,7 @@ export function StatsDashboard() {
                     }}
                   />
                   <Bar dataKey="count">
-                    {starRatingsData.map((entry, index) => (
+                    {starRatingsData.starData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color}
@@ -461,7 +487,7 @@ export function StatsDashboard() {
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 mt-4">
-              {starRatingsData.map((item, index) => (
+              {starRatingsData.starData.map((item, index) => (
                 <div key={index} className="flex items-center gap-2 text-sm">
                   <div 
                     className="w-3 h-3 rounded" 
@@ -597,7 +623,7 @@ export function StatsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {regionTracker.map((region) => (
+              {regionData.regionTracker.map((region) => (
                 <div 
                   key={region.region} 
                   className="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-2 -m-2 transition-colors"
@@ -624,7 +650,7 @@ export function StatsDashboard() {
                   </div>
                 </div>
               ))}
-              {regionTracker.length === 0 && (
+              {regionData.regionTracker.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
                   No regional data yet
                 </div>

@@ -4,18 +4,27 @@ import { useState, useCallback, useRef } from 'react';
 import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
-import confetti from 'canvas-confetti';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { japanPrefectures } from '@/data/japan';
+import dynamic from 'next/dynamic';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
-import { VisitTable } from '@/components/visit-table';
-import { StatsDashboard } from '@/components/stats-dashboard';
 import { PageNav } from '@/components/page-nav';
 import { PrefectureManagementModal } from '@/components/prefecture-management-modal';
+
+// Dynamic imports for heavy components
+const VisitTable = dynamic(() => import('@/components/visit-table').then(mod => ({ default: mod.VisitTable })), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-96"></div>,
+  ssr: false
+});
+
+const StatsDashboard = dynamic(() => import('@/components/stats-dashboard').then(mod => ({ default: mod.StatsDashboard })), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-96"></div>,
+  ssr: false
+});
 
 export default function Home() {
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -99,11 +108,14 @@ export default function Home() {
     }, 500);
   };
 
-  const handleLogoClick = useCallback(() => {
+  const handleLogoClick = useCallback(async () => {
     const newCount = logoClickCount + 1;
     setLogoClickCount(newCount);
     
     if (newCount === 5) {
+      // Dynamically import confetti only when needed
+      const { default: confetti } = await import('canvas-confetti');
+      
       // Trigger confetti
       const duration = 3000;
       const animationEnd = Date.now() + duration;
