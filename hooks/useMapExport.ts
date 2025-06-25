@@ -47,65 +47,100 @@ export function useMapExport(options: UseMapExportOptions = {}) {
         throw new Error('Could not find map element to export');
       }
 
-      // Create a comprehensive fallback style to handle oklch colors
+      // Create comprehensive fallback to override CSS custom properties with oklch values
       const createColorFallbacks = () => {
         const style = document.createElement('style');
         style.id = 'html2canvas-oklch-fallback';
-        // Override problematic modern colors with safe hex equivalents
+        // Override CSS custom properties at root level to replace oklch() with hex equivalents
         style.textContent = `
-          /* Global fallbacks for problematic CSS functions */
-          * {
-            /* Reset any CSS functions that html2canvas can't parse */
-            background-image: none !important;
+          :root {
+            /* Override all CSS custom properties that use oklch() */
+            --background: #ffffff !important;
+            --foreground: #0a0a0a !important;
+            --card: #ffffff !important;
+            --card-foreground: #0a0a0a !important;
+            --popover: #ffffff !important;
+            --popover-foreground: #0a0a0a !important;
+            --primary: #1a1a1a !important;
+            --primary-foreground: #fafafa !important;
+            --secondary: #f4f4f5 !important;
+            --secondary-foreground: #1a1a1a !important;
+            --muted: #f4f4f5 !important;
+            --muted-foreground: #71717a !important;
+            --accent: #f4f4f5 !important;
+            --accent-foreground: #1a1a1a !important;
+            --destructive: #ef4444 !important;
+            --destructive-foreground: #fafafa !important;
+            --border: #e4e4e7 !important;
+            --input: #e4e4e7 !important;
+            --ring: #a1a1aa !important;
+            --chart-1: #f97316 !important;
+            --chart-2: #06b6d4 !important;
+            --chart-3: #3b82f6 !important;
+            --chart-4: #84cc16 !important;
+            --chart-5: #f59e0b !important;
+            --sidebar: #fafafa !important;
+            --sidebar-foreground: #0a0a0a !important;
+            --sidebar-primary: #1a1a1a !important;
+            --sidebar-primary-foreground: #fafafa !important;
+            --sidebar-accent: #f4f4f5 !important;
+            --sidebar-accent-foreground: #1a1a1a !important;
+            --sidebar-border: #e4e4e7 !important;
+            --sidebar-ring: #a1a1aa !important;
           }
           
-          /* Map container specific overrides */
-          [data-map-container],
-          [data-map-container] * {
-            /* Ensure solid backgrounds */
-            background-color: inherit !important;
-            background-image: none !important;
+          [data-theme="dark"] {
+            /* Dark mode overrides */
+            --background: #0a0a0a !important;
+            --foreground: #fafafa !important;
+            --card: #1a1a1a !important;
+            --card-foreground: #fafafa !important;
+            --popover: #1a1a1a !important;
+            --popover-foreground: #fafafa !important;
+            --primary: #e4e4e7 !important;
+            --primary-foreground: #1a1a1a !important;
+            --secondary: #262626 !important;
+            --secondary-foreground: #fafafa !important;
+            --muted: #262626 !important;
+            --muted-foreground: #a1a1aa !important;
+            --accent: #262626 !important;
+            --accent-foreground: #fafafa !important;
+            --destructive: #dc2626 !important;
+            --border: rgba(255, 255, 255, 0.1) !important;
+            --input: rgba(255, 255, 255, 0.15) !important;
+            --ring: #71717a !important;
+            --chart-1: #8b5cf6 !important;
+            --chart-2: #10b981 !important;
+            --chart-3: #f59e0b !important;
+            --chart-4: #ec4899 !important;
+            --chart-5: #ef4444 !important;
+            --sidebar: #1a1a1a !important;
+            --sidebar-foreground: #fafafa !important;
+            --sidebar-primary: #8b5cf6 !important;
+            --sidebar-primary-foreground: #fafafa !important;
+            --sidebar-accent: #262626 !important;
+            --sidebar-accent-foreground: #fafafa !important;
+            --sidebar-border: rgba(255, 255, 255, 0.1) !important;
+            --sidebar-ring: #71717a !important;
           }
           
-          /* Specific Tailwind class overrides for common UI elements */
+          /* Additional overrides for Tailwind classes */
           .bg-white, .bg-white\/90 { background-color: #ffffff !important; }
           .bg-gray-50, .bg-gray-50\/30 { background-color: #f9fafb !important; }
           .bg-gray-100 { background-color: #f3f4f6 !important; }
           .bg-gray-200 { background-color: #e5e7eb !important; }
           .bg-gray-800, .bg-gray-800\/90 { background-color: #1f2937 !important; }
           .bg-gray-900 { background-color: #111827 !important; }
-          .bg-blue-100 { background-color: #dbeafe !important; }
-          .bg-blue-900\/80 { background-color: rgba(30, 58, 138, 0.8) !important; }
-          .bg-red-100 { background-color: #fee2e2 !important; }
-          .bg-red-900\/80 { background-color: rgba(127, 29, 29, 0.8) !important; }
-          .bg-purple-100 { background-color: #f3e8ff !important; }
-          .bg-purple-900\/50 { background-color: rgba(88, 28, 135, 0.5) !important; }
-          
-          /* Text colors */
           .text-gray-700 { color: #374151 !important; }
           .text-gray-300 { color: #d1d5db !important; }
-          .text-gray-200 { color: #e5e7eb !important; }
-          .text-white { color: #ffffff !important; }
-          .text-black { color: #000000 !important; }
-          .text-blue-800 { color: #1e40af !important; }
-          .text-blue-200 { color: #bfdbfe !important; }
-          .text-red-800 { color: #991b1b !important; }
-          .text-red-200 { color: #fecaca !important; }
-          .text-purple-600 { color: #9333ea !important; }
-          .text-purple-400 { color: #c084fc !important; }
-          
-          /* Border colors */
-          .border-gray-200, .border-gray-200\/60 { border-color: #e5e7eb !important; }
           .border-gray-300 { border-color: #d1d5db !important; }
           .border-gray-600 { border-color: #4b5563 !important; }
-          .border-gray-700, .border-gray-700\/60 { border-color: #374151 !important; }
-          .border-blue-300 { border-color: #93c5fd !important; }
-          .border-blue-700 { border-color: #1d4ed8 !important; }
-          .border-red-300 { border-color: #fca5a5 !important; }
-          .border-red-700 { border-color: #b91c1c !important; }
+          .border-gray-700 { border-color: #374151 !important; }
           
-          /* Force simple gradients to solid colors */
-          .bg-gradient-to-r { background-image: none !important; background-color: #ffffff !important; }
+          /* Force removal of problematic CSS functions */
+          * {
+            background-image: none !important;
+          }
         `;
         document.head.appendChild(style);
         return style;
@@ -117,8 +152,55 @@ export function useMapExport(options: UseMapExportOptions = {}) {
         }
       };
 
+      // Alternative approach: Clone the element and strip problematic styles
+      const prepareElementForCapture = () => {
+        const clone = targetElement.cloneNode(true) as HTMLElement;
+        
+        // Set explicit styles on the clone to avoid oklch issues
+        const setExplicitStyles = (element: Element) => {
+          if (element instanceof HTMLElement) {
+            // Force basic styling that html2canvas can understand
+            element.style.backgroundColor = element.style.backgroundColor || 'transparent';
+            element.style.color = element.style.color || '#000000';
+            element.style.borderColor = element.style.borderColor || 'transparent';
+            
+            // Remove any CSS custom properties that might reference oklch
+            const computedStyle = window.getComputedStyle(element);
+            if (computedStyle.backgroundColor?.includes('oklch')) {
+              element.style.backgroundColor = '#ffffff';
+            }
+            if (computedStyle.color?.includes('oklch')) {
+              element.style.color = '#000000';
+            }
+            if (computedStyle.borderColor?.includes('oklch')) {
+              element.style.borderColor = '#e5e7eb';
+            }
+          }
+          
+          // Recursively apply to children
+          Array.from(element.children).forEach(setExplicitStyles);
+        };
+        
+        setExplicitStyles(clone);
+        
+        // Create a temporary container
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '-9999px';
+        container.style.width = `${targetElement.offsetWidth}px`;
+        container.style.height = `${targetElement.offsetHeight}px`;
+        container.appendChild(clone);
+        document.body.appendChild(container);
+        
+        return { clone, container };
+      };
+
       // Apply color fallbacks temporarily
       const fallbackStyle = createColorFallbacks();
+      
+      // Wait for styles to be applied
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Default html2canvas options optimized for SVG maps
       const defaultCanvasOptions = {
@@ -136,12 +218,27 @@ export function useMapExport(options: UseMapExportOptions = {}) {
       };
 
       let canvas;
+      let clonedElements: { clone: HTMLElement; container: HTMLElement } | null = null;
+      
       try {
-        // Capture the element with fallback styles applied
+        // Try the original element first with fallback styles
         canvas = await html2canvas(targetElement, defaultCanvasOptions);
+      } catch (originalError) {
+        console.warn('Primary capture failed, trying clone approach:', originalError);
+        try {
+          // If that fails, try the clone approach
+          clonedElements = prepareElementForCapture();
+          canvas = await html2canvas(clonedElements.clone, defaultCanvasOptions);
+        } catch (cloneError) {
+          console.error('Clone capture also failed:', cloneError);
+          throw originalError; // Throw the original error
+        }
       } finally {
-        // Always remove the fallback styles
+        // Clean up
         removeFallbacks(fallbackStyle);
+        if (clonedElements) {
+          document.body.removeChild(clonedElements.container);
+        }
       }
 
       // Create download link

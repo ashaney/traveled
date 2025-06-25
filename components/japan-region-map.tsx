@@ -7,6 +7,7 @@ import { RATING_COLORS, RATING_LABELS, VisitRating } from '@/types';
 import { allRegionPaths, PrefecturePath } from '@/data/japan-realistic-svg-paths';
 import { ZoomIn, ZoomOut, RotateCcw, Filter, Download } from 'lucide-react';
 import { useMapExport } from '@/hooks/useMapExport';
+import { useMapExportSvg } from '@/hooks/useMapExportSvg';
 
 interface JapanRegionMapProps {
   className?: string;
@@ -28,7 +29,11 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [filters] = useState<MapFilters>({});
   const svgRef = useRef<SVGSVGElement>(null);
-  const { exportMap, isExporting, error, clearError } = useMapExport();
+  const { exportMap: exportMapHtml, isExporting: isExportingHtml, error: errorHtml } = useMapExport();
+  const { exportMap: exportMapSvg, isExporting: isExportingSvg, error: errorSvg, clearError } = useMapExportSvg();
+  
+  const isExporting = isExportingHtml || isExportingSvg;
+  const error = errorHtml || errorSvg;
 
   const getRegionColor = (regionId: string) => {
     // If filters are active, check if region should be visible
@@ -166,7 +171,14 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
             <RotateCcw className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           </button>
           <button
-            onClick={() => exportMap({ element: svgRef.current?.parentElement as HTMLElement })}
+            onClick={async () => {
+              // Try SVG export first, fallback to html2canvas if needed
+              const result = await exportMapSvg({ svgElement: svgRef.current });
+              if (!result.success) {
+                console.warn('SVG export failed, trying html2canvas fallback');
+                await exportMapHtml({ element: svgRef.current?.parentElement as HTMLElement });
+              }
+            }}
             disabled={isExporting}
             className="p-2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title={isExporting ? "Exporting..." : "Download PNG"}
