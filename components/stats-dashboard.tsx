@@ -75,11 +75,20 @@ export function StatsDashboard() {
       }).length;
       
       if (count > 0) {
+        // Create yellow gradient from light to dark based on star rating
+        const yellowShades = {
+          1: '#fef3c7', // yellow-100 - lightest for 1 star
+          2: '#fde68a', // yellow-200 
+          3: '#fcd34d', // yellow-300
+          4: '#f59e0b', // yellow-500 - medium for 4 stars
+          5: '#d97706', // yellow-600 - darkest for 5 stars
+        };
+        
         starData.push({
           stars,
           count,
           name: `${stars} Star${stars > 1 ? 's' : ''}`,
-          color: `hsl(${45 + stars * 15}, 70%, 50%)` // Gold gradient
+          color: yellowShades[stars as keyof typeof yellowShades]
         });
       }
     }
