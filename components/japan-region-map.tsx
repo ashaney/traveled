@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils';
 import { useSupabaseVisits } from '@/contexts/SupabaseVisitsContext';
 import { RATING_COLORS, RATING_LABELS, VisitRating } from '@/types';
 import { allRegionPaths, PrefecturePath } from '@/data/japan-realistic-svg-paths';
-import { ZoomIn, ZoomOut, RotateCcw, Filter } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Filter, Download } from 'lucide-react';
+import { useMapExport } from '@/hooks/useMapExport';
 
 interface JapanRegionMapProps {
   className?: string;
@@ -27,6 +28,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [filters] = useState<MapFilters>({});
   const svgRef = useRef<SVGSVGElement>(null);
+  const { exportMap, isExporting, error, clearError } = useMapExport();
 
   const getRegionColor = (regionId: string) => {
     // If filters are active, check if region should be visible
@@ -137,7 +139,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
   };
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div className={cn("relative overflow-hidden", className)} data-map-container>
       {/* Controls */}
       <div className="absolute bottom-4 left-0 z-10 flex flex-col gap-2">
         {/* Zoom Controls */}
@@ -162,6 +164,14 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
             title="Reset View"
           >
             <RotateCcw className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+          </button>
+          <button
+            onClick={() => exportMap({ element: svgRef.current?.parentElement as HTMLElement })}
+            disabled={isExporting}
+            className="p-2 bg-white/90 hover:bg-white dark:bg-gray-800/90 dark:hover:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isExporting ? "Exporting..." : "Download PNG"}
+          >
+            <Download className={cn("w-4 h-4 text-gray-700 dark:text-gray-300", isExporting && "animate-pulse")} />
           </button>
         </div>
         
@@ -237,6 +247,21 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
                 {RATING_LABELS[filters.visitType]}
               </span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {error && (
+        <div className="absolute top-4 right-4 bg-red-100 dark:bg-red-900/80 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg shadow-lg z-10">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">{error}</span>
+            <button
+              onClick={clearError}
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+            >
+              ×
+            </button>
           </div>
         </div>
       )}
