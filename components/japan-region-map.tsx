@@ -267,7 +267,7 @@ export function JapanRegionMap({ className, onRegionClick, selectedRegion }: Jap
       {error && (
         <div className="absolute top-4 right-4 bg-red-100 dark:bg-red-900/80 border border-red-300 dark:border-red-700 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg shadow-lg z-10">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-medium">{error}</span>
+            <span className="text-sm font-medium">{error.message}</span>
             <button
               onClick={clearError}
               className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"

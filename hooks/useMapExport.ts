@@ -2,6 +2,14 @@
 
 import { useState, useCallback } from 'react';
 import html2canvas from 'html2canvas';
+import { 
+  ExportResult, 
+  ExportError, 
+  ExportErrorType, 
+  createExportError,
+  FILE_SIZE_WARNING_THRESHOLD,
+  FILE_SIZE_MAX_THRESHOLD 
+} from '@/types/export';
 
 export interface UseMapExportOptions {
   /**
@@ -20,9 +28,9 @@ export interface UseMapExportOptions {
 
 export function useMapExport(options: UseMapExportOptions = {}) {
   const [isExporting, setIsExporting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ExportError | null>(null);
 
-  const exportMap = useCallback(async (customOptions?: Partial<UseMapExportOptions>) => {
+  const exportMap = useCallback(async (customOptions?: Partial<UseMapExportOptions>): Promise<ExportResult> => {
     const mergedOptions = { ...options, ...customOptions };
     const {
       element,
@@ -44,84 +52,78 @@ export function useMapExport(options: UseMapExportOptions = {}) {
       }
 
       if (!targetElement) {
-        throw new Error('Could not find map element to export');
+        const error = createExportError('ELEMENT_NOT_FOUND', 'Could not find map element to export');
+        setError(error);
+        return { success: false, error };
       }
 
-      // Create comprehensive fallback to override CSS custom properties with oklch values
+      // Create dynamic color fallback by reading computed CSS variables
       const createColorFallbacks = () => {
         const style = document.createElement('style');
         style.id = 'html2canvas-oklch-fallback';
-        // Override CSS custom properties at root level to replace oklch() with hex equivalents
+        
+        // Get computed CSS custom properties dynamically
+        const getComputedCSSVariables = () => {
+          const root = document.documentElement;
+          const computed = getComputedStyle(root);
+          const variables: Record<string, string> = {};
+          
+          // Common CSS variables that might use oklch()
+          const cssVarNames = [
+            '--background', '--foreground', '--card', '--card-foreground',
+            '--popover', '--popover-foreground', '--primary', '--primary-foreground', 
+            '--secondary', '--secondary-foreground', '--muted', '--muted-foreground',
+            '--accent', '--accent-foreground', '--destructive', '--destructive-foreground',
+            '--border', '--input', '--ring', '--chart-1', '--chart-2', '--chart-3',
+            '--chart-4', '--chart-5', '--sidebar', '--sidebar-foreground',
+            '--sidebar-primary', '--sidebar-primary-foreground', '--sidebar-accent',
+            '--sidebar-accent-foreground', '--sidebar-border', '--sidebar-ring'
+          ];
+          
+          cssVarNames.forEach(varName => {
+            const value = computed.getPropertyValue(varName).trim();
+            if (value && hasUnsupportedCSS(value)) {
+              // Try to get the resolved value by creating a test element
+              const testEl = document.createElement('div');
+              testEl.style.color = `var(${varName})`;
+              document.body.appendChild(testEl);
+              const resolvedValue = getComputedStyle(testEl).color;
+              document.body.removeChild(testEl);
+              
+              // Convert rgb() to hex if possible
+              variables[varName] = rgbToHex(resolvedValue) || '#000000';
+            }
+          });
+          
+          return variables;
+        };
+        
+        const hasUnsupportedCSS = (value: string) => 
+          /\b(oklch|lab|lch|color-mix|hsl|hsla)\b/.test(value);
+        
+        const rgbToHex = (rgb: string): string | null => {
+          const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+          if (!match) return null;
+          
+          const [, r, g, b] = match;
+          return `#${[r, g, b].map(x => {
+            const hex = parseInt(x, 10).toString(16);
+            return hex.length === 1 ? '0' + hex : hex;
+          }).join('')}`;
+        };
+        
+        // Get dynamic overrides
+        const dynamicVars = getComputedCSSVariables();
+        
+        // Build CSS content with dynamic values
+        const dynamicRules = Object.entries(dynamicVars)
+          .map(([varName, value]) => `    ${varName}: ${value} !important;`)
+          .join('\n');
+        
         style.textContent = `
           :root {
-            /* Override all CSS custom properties that use oklch() */
-            --background: #ffffff !important;
-            --foreground: #0a0a0a !important;
-            --card: #ffffff !important;
-            --card-foreground: #0a0a0a !important;
-            --popover: #ffffff !important;
-            --popover-foreground: #0a0a0a !important;
-            --primary: #1a1a1a !important;
-            --primary-foreground: #fafafa !important;
-            --secondary: #f4f4f5 !important;
-            --secondary-foreground: #1a1a1a !important;
-            --muted: #f4f4f5 !important;
-            --muted-foreground: #71717a !important;
-            --accent: #f4f4f5 !important;
-            --accent-foreground: #1a1a1a !important;
-            --destructive: #ef4444 !important;
-            --destructive-foreground: #fafafa !important;
-            --border: #e4e4e7 !important;
-            --input: #e4e4e7 !important;
-            --ring: #a1a1aa !important;
-            --chart-1: #f97316 !important;
-            --chart-2: #06b6d4 !important;
-            --chart-3: #3b82f6 !important;
-            --chart-4: #84cc16 !important;
-            --chart-5: #f59e0b !important;
-            --sidebar: #fafafa !important;
-            --sidebar-foreground: #0a0a0a !important;
-            --sidebar-primary: #1a1a1a !important;
-            --sidebar-primary-foreground: #fafafa !important;
-            --sidebar-accent: #f4f4f5 !important;
-            --sidebar-accent-foreground: #1a1a1a !important;
-            --sidebar-border: #e4e4e7 !important;
-            --sidebar-ring: #a1a1aa !important;
-          }
-          
-          [data-theme="dark"] {
-            /* Dark mode overrides */
-            --background: #0a0a0a !important;
-            --foreground: #fafafa !important;
-            --card: #1a1a1a !important;
-            --card-foreground: #fafafa !important;
-            --popover: #1a1a1a !important;
-            --popover-foreground: #fafafa !important;
-            --primary: #e4e4e7 !important;
-            --primary-foreground: #1a1a1a !important;
-            --secondary: #262626 !important;
-            --secondary-foreground: #fafafa !important;
-            --muted: #262626 !important;
-            --muted-foreground: #a1a1aa !important;
-            --accent: #262626 !important;
-            --accent-foreground: #fafafa !important;
-            --destructive: #dc2626 !important;
-            --border: rgba(255, 255, 255, 0.1) !important;
-            --input: rgba(255, 255, 255, 0.15) !important;
-            --ring: #71717a !important;
-            --chart-1: #8b5cf6 !important;
-            --chart-2: #10b981 !important;
-            --chart-3: #f59e0b !important;
-            --chart-4: #ec4899 !important;
-            --chart-5: #ef4444 !important;
-            --sidebar: #1a1a1a !important;
-            --sidebar-foreground: #fafafa !important;
-            --sidebar-primary: #8b5cf6 !important;
-            --sidebar-primary-foreground: #fafafa !important;
-            --sidebar-accent: #262626 !important;
-            --sidebar-accent-foreground: #fafafa !important;
-            --sidebar-border: rgba(255, 255, 255, 0.1) !important;
-            --sidebar-ring: #71717a !important;
+            /* Dynamically resolved CSS variables */
+${dynamicRules}
           }
           
           /* Additional overrides for Tailwind classes */
@@ -142,6 +144,7 @@ export function useMapExport(options: UseMapExportOptions = {}) {
             background-image: none !important;
           }
         `;
+        
         document.head.appendChild(style);
         return style;
       };
@@ -199,8 +202,8 @@ export function useMapExport(options: UseMapExportOptions = {}) {
       // Apply color fallbacks temporarily
       const fallbackStyle = createColorFallbacks();
       
-      // Wait for styles to be applied
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Use requestAnimationFrame instead of fixed timeout for style application
+      await new Promise(resolve => requestAnimationFrame(resolve));
 
       // Default html2canvas options optimized for SVG maps
       const defaultCanvasOptions = {
@@ -217,8 +220,18 @@ export function useMapExport(options: UseMapExportOptions = {}) {
         ...canvasOptions
       };
 
-      let canvas;
+      let canvas: HTMLCanvasElement;
       let clonedElements: { clone: HTMLElement; container: HTMLElement } | null = null;
+      
+      // Enhanced cleanup safety with Promise.resolve().then() to ensure cleanup
+      const ensureCleanup = () => {
+        Promise.resolve().then(() => {
+          removeFallbacks(fallbackStyle);
+          if (clonedElements?.container.parentNode) {
+            document.body.removeChild(clonedElements.container);
+          }
+        });
+      };
       
       try {
         // Try the original element first with fallback styles
@@ -231,18 +244,34 @@ export function useMapExport(options: UseMapExportOptions = {}) {
           canvas = await html2canvas(clonedElements.clone, defaultCanvasOptions);
         } catch (cloneError) {
           console.error('Clone capture also failed:', cloneError);
-          throw originalError; // Throw the original error
-        }
-      } finally {
-        // Clean up
-        removeFallbacks(fallbackStyle);
-        if (clonedElements) {
-          document.body.removeChild(clonedElements.container);
+          ensureCleanup();
+          const error = createExportError(
+            'HTML2CANVAS_FAILED',
+            'Failed to capture map with both primary and fallback methods',
+            originalError instanceof Error ? originalError : new Error(String(originalError))
+          );
+          setError(error);
+          return { success: false, error };
         }
       }
+      
+      // Cleanup fallback styles and cloned elements
+      ensureCleanup();
 
-      // Create download link
+      // Create download link and get file size
       const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const fileSize = Math.round((dataUrl.length * 3) / 4); // Approximate file size
+      
+      // Check file size warnings
+      if (fileSize > FILE_SIZE_MAX_THRESHOLD) {
+        const error = createExportError(
+          'FILE_TOO_LARGE',
+          `Export file is too large (${Math.round(fileSize / 1024 / 1024)}MB). Maximum allowed is ${Math.round(FILE_SIZE_MAX_THRESHOLD / 1024 / 1024)}MB.`
+        );
+        setError(error);
+        return { success: false, error };
+      }
+      
       const link = document.createElement('a');
       link.download = `${fileName}.png`;
       link.href = dataUrl;
@@ -255,15 +284,20 @@ export function useMapExport(options: UseMapExportOptions = {}) {
       return {
         success: true,
         canvas,
-        dataUrl
+        dataUrl,
+        fileSize
       };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to export map';
-      setError(errorMessage);
+      const error = createExportError(
+        'UNKNOWN_ERROR',
+        err instanceof Error ? err.message : 'Failed to export map',
+        err instanceof Error ? err : new Error(String(err))
+      );
+      setError(error);
       console.error('Map export error:', err);
       return {
         success: false,
-        error: errorMessage
+        error
       };
     } finally {
       setIsExporting(false);
