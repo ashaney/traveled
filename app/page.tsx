@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
@@ -13,7 +13,9 @@ import dynamic from 'next/dynamic';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
 import { PageNav } from '@/components/page-nav';
+import { AnimatedHeaderItem } from '@/components/ui/animated-header-item';
 import { PrefectureManagementModal } from '@/components/prefecture-management-modal';
+import { usePrefectureSearch } from '@/hooks/usePrefectureSearch';
 
 // Dynamic imports for heavy components
 const VisitTable = dynamic(() => import('@/components/visit-table').then(mod => ({ default: mod.VisitTable })), {
@@ -38,75 +40,22 @@ export default function Home() {
   const [isSignOutHovered, setIsSignOutHovered] = useState(false);
   const [isThemeHovered, setIsThemeHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<string[]>([]);
-  const [selectedSearchResult, setSelectedSearchResult] = useState<string | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const { user, signOut, loading } = useAuth();
   const { loading: visitsLoading } = useSupabaseVisits();
   const { theme, setTheme, resolvedTheme } = useTheme();
-
-  // Search functionality
-  const handleSearch = (term: string) => {
-    // Clear any pending scroll timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-
-    if (!term.trim()) {
-      setSearchResults([]);
-      setSelectedSearchResult(null);
-      return;
-    }
-
-    const searchLower = term.toLowerCase();
-    const matches = japanPrefectures.regions.filter(region => 
-      region.name.toLowerCase().includes(searchLower) ||
-      region.nameJapanese?.includes(term) ||
-      region.id.toLowerCase().includes(searchLower)
-    ).map(region => region.id);
-
-    setSearchResults(matches);
-    
-    // Immediate map highlighting (no delay)
-    if (matches.length > 0) {
-      setSelectedSearchResult(matches[0]);
-      
-      // Debounced table scrolling (800ms delay)
-      scrollTimeoutRef.current = setTimeout(() => {
-        scrollToTableRow(matches[0]);
-      }, 800);
-    } else {
-      setSelectedSearchResult(null);
-    }
-  };
-
-  const scrollToTableRow = (regionId: string) => {
-    // Check if the prefecture exists in the table first
-    const row = document.querySelector(`[data-region-id="${regionId}"]`);
-    if (!row) {
-      // Prefecture not in table (no visits yet), just highlight on map
-      return;
-    }
-    
-    // Prefecture exists in table, proceed with scrolling
-    const tableSection = document.getElementById('table-section');
-    if (tableSection) {
-      tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    
-    // Then scroll to specific row (with a delay to allow section scroll)
-    setTimeout(() => {
-      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Briefly highlight the row
-      row.classList.add('bg-blue-100', 'dark:bg-blue-900/50');
-      setTimeout(() => {
-        row.classList.remove('bg-blue-100', 'dark:bg-blue-900/50');
-      }, 2000);
-    }, 500);
-  };
+  const {
+    searchTerm,
+    setSearchTerm,
+    searchResults,
+    selectedSearchResult,
+    handleSearch,
+    resetSearch,
+    scrollToTableRow,
+    cancelScroll,
+  } = usePrefectureSearch();
+  
 
   const handleLogoClick = useCallback(async () => {
     const newCount = logoClickCount + 1;
@@ -248,21 +197,13 @@ export default function Home() {
                         }}
                         onBlur={() => {
                           if (!searchTerm) {
-                            if (scrollTimeoutRef.current) {
-                              clearTimeout(scrollTimeoutRef.current);
-                            }
                             setIsSearchExpanded(false);
-                            setSearchResults([]);
-                            setSelectedSearchResult(null);
+                            resetSearch();
                           }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && searchResults.length > 0) {
-                            // Clear debounce timeout and execute immediately
-                            if (scrollTimeoutRef.current) {
-                              clearTimeout(scrollTimeoutRef.current);
-                            }
-                            // Immediate navigation on Enter
+                            cancelScroll();
                             scrollToTableRow(searchResults[0]);
                             const mapSection = document.getElementById('map-section');
                             if (mapSection) {
@@ -270,12 +211,7 @@ export default function Home() {
                             }
                           }
                           if (e.key === 'Escape') {
-                            if (scrollTimeoutRef.current) {
-                              clearTimeout(scrollTimeoutRef.current);
-                            }
-                            setSearchTerm('');
-                            setSearchResults([]);
-                            setSelectedSearchResult(null);
+                            resetSearch();
                             setIsSearchExpanded(false);
                           }
                         }}
@@ -285,12 +221,7 @@ export default function Home() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (scrollTimeoutRef.current) {
-                              clearTimeout(scrollTimeoutRef.current);
-                            }
-                            setSearchTerm('');
-                            setSearchResults([]);
-                            setSelectedSearchResult(null);
+                            resetSearch();
                             setIsSearchExpanded(false);
                           }}
                           className="px-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -314,14 +245,8 @@ export default function Home() {
                           key={regionId}
                           className="w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                           onClick={() => {
-                            // Clear debounce timeout and execute immediately
-                            if (scrollTimeoutRef.current) {
-                              clearTimeout(scrollTimeoutRef.current);
-                            }
-                            setSelectedSearchResult(regionId);
                             setSearchTerm(region.name);
                             setIsSearchExpanded(false);
-                            // Immediate navigation on click
                             scrollToTableRow(regionId);
                             const mapSection = document.getElementById('map-section');
                             if (mapSection) {
@@ -398,105 +323,46 @@ export default function Home() {
                 </AnimatePresence>
               </motion.div>
 
-              {/* Animated Theme Toggle */}
-              <motion.div
-                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
+              <AnimatedHeaderItem
+                isHovered={isThemeHovered}
                 onHoverStart={() => setIsThemeHovered(true)}
                 onHoverEnd={() => setIsThemeHovered(false)}
-                animate={{ width: isThemeHovered ? "auto" : "40px" }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                 onClick={() => {
                   const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
                   const currentIndex = themes.indexOf(theme);
                   const nextTheme = themes[(currentIndex + 1) % themes.length];
                   setTheme(nextTheme);
                 }}
-              >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-l-lg ${
-                  theme === 'light' 
-                    ? 'bg-yellow-100 dark:bg-yellow-900/50' 
-                    : 'bg-blue-100 dark:bg-blue-900/50'
-                }`}>
-                  {theme === 'light' && <Sun className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />}
-                  {theme === 'dark' && <Moon className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                  {theme === 'system' && <Monitor className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                </div>
-                <AnimatePresence>
-                  {isThemeHovered && (
-                    <motion.div
-                      className="flex items-center h-full"
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <span className={`text-sm font-medium px-3 whitespace-nowrap capitalize ${
-                        theme === 'light'
-                          ? 'text-yellow-600 dark:text-yellow-400'
-                          : 'text-blue-600 dark:text-blue-400'
-                      }`}>
-                        {theme === 'system' ? 'Auto' : theme}
-                      </span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                icon={
+                  theme === 'light' ? <Sun className="w-4 h-4 text-yellow-600 dark:text-yellow-400" /> :
+                  theme === 'dark' ? <Moon className="w-4 h-4 text-blue-600 dark:text-blue-400" /> :
+                  <Monitor className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                }
+                label={theme === 'system' ? 'Auto' : theme}
+                bgColor={theme === 'light' ? 'bg-yellow-100 dark:bg-yellow-900/50' : 'bg-blue-100 dark:bg-blue-900/50'}
+                textColor={theme === 'light' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}
+              />
 
-              {/* Animated User Info */}
-              <motion.div 
-                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
+              <AnimatedHeaderItem
+                isHovered={isUserHovered}
                 onHoverStart={() => setIsUserHovered(true)}
                 onHoverEnd={() => setIsUserHovered(false)}
-                animate={{ width: isUserHovered ? "auto" : "40px" }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-              >
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-l-lg">
-                  <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <AnimatePresence>
-                  {isUserHovered && (
-                    <motion.div
-                      className="flex items-center h-full"
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 px-3 whitespace-nowrap max-w-32 truncate">{user?.email}</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                icon={<User className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                label={user?.email ?? ''}
+                bgColor="bg-blue-100 dark:bg-blue-900/50"
+                textColor="text-gray-700 dark:text-gray-200"
+              />
 
-              {/* Animated Sign Out Button */}
-              <motion.div
-                className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
+              <AnimatedHeaderItem
+                isHovered={isSignOutHovered}
                 onHoverStart={() => setIsSignOutHovered(true)}
                 onHoverEnd={() => setIsSignOutHovered(false)}
-                animate={{ width: isSignOutHovered ? "auto" : "40px" }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                whileHover={{ boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                 onClick={signOut}
-              >
-                <div className="flex items-center justify-center w-10 h-10 bg-red-100 dark:bg-red-900/50 rounded-l-lg">
-                  <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
-                </div>
-                <AnimatePresence>
-                  {isSignOutHovered && (
-                    <motion.div
-                      className="flex items-center h-full"
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <span className="text-sm font-medium text-red-600 dark:text-red-400 px-3 whitespace-nowrap">Sign Out</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                icon={<LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />}
+                label="Sign Out"
+                bgColor="bg-red-100 dark:bg-red-900/50"
+                textColor="text-red-600 dark:text-red-400"
+              />
             </div>
           </div>
         </div>
