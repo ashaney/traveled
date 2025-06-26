@@ -1,6 +1,9 @@
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { japanPrefectures } from '@/data/japan';
+
+const SCROLL_DELAY = 800;
+const HIGHLIGHT_DURATION = 2000;
 
 export const usePrefectureSearch = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,23 +11,31 @@ export const usePrefectureSearch = () => {
   const [selectedSearchResult, setSelectedSearchResult] = useState<string | null>(null);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const scrollToTableRow = (regionId: string) => {
     const row = document.querySelector(`[data-region-id="${regionId}"]`);
     if (!row) {
       return;
     }
-    
+
     const tableSection = document.getElementById('table-section');
     if (tableSection) {
       tableSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     setTimeout(() => {
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
       row.classList.add('bg-blue-100', 'dark:bg-blue-900/50');
       setTimeout(() => {
         row.classList.remove('bg-blue-100', 'dark:bg-blue-900/50');
-      }, 2000);
+      }, HIGHLIGHT_DURATION);
     }, 500);
   };
 
@@ -40,20 +51,20 @@ export const usePrefectureSearch = () => {
     }
 
     const searchLower = term.toLowerCase();
-    const matches = japanPrefectures.regions.filter(region => 
+    const matches = japanPrefectures.regions.filter(region =>
       region.name.toLowerCase().includes(searchLower) ||
       region.nameJapanese?.includes(term) ||
       region.id.toLowerCase().includes(searchLower)
     ).map(region => region.id);
 
     setSearchResults(matches);
-    
+
     if (matches.length > 0) {
       setSelectedSearchResult(matches[0]);
-      
+
       scrollTimeoutRef.current = setTimeout(() => {
         scrollToTableRow(matches[0]);
-      }, 800);
+      }, SCROLL_DELAY);
     } else {
       setSelectedSearchResult(null);
     }

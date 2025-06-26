@@ -7,18 +7,17 @@ interface AnimatedHeaderItemProps {
   onClick?: () => void;
   icon: React.ReactNode;
   label: string;
-  width?: string;
   bgColor: string;
   textColor: string;
 }
 
-export const AnimatedHeaderItem: React.FC<AnimatedHeaderItemProps> = ({ isHovered, onHoverStart, onHoverEnd, onClick, icon, label, width = 'auto', bgColor, textColor }) => {
+export const AnimatedHeaderItem: React.FC<AnimatedHeaderItemProps> = ({ isHovered, onHoverStart, onHoverEnd, onClick, icon, label, bgColor, textColor }) => {
   return (
     <motion.div
       className="flex items-center bg-gray-50/80 backdrop-blur-sm rounded-lg border border-gray-200/80 h-10 overflow-hidden cursor-pointer shadow-sm dark:bg-gray-800/80 dark:border-gray-700/80"
       onHoverStart={onHoverStart}
       onHoverEnd={onHoverEnd}
-      animate={{ width: isHovered ? width : '40px' }}
+      animate={{ width: isHovered ? 'auto' : '40px' }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       whileHover={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
       onClick={onClick}
