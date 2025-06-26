@@ -68,6 +68,12 @@ export const usePrefectureSearch = () => {
     setSelectedSearchResult(null);
   }, []);
 
+  const cancelScroll = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+  }, []);
+
   return {
     searchTerm,
     setSearchTerm,
@@ -76,5 +82,6 @@ export const usePrefectureSearch = () => {
     handleSearch,
     resetSearch,
     scrollToTableRow,
+    cancelScroll,
   };
 };

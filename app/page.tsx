@@ -53,6 +53,7 @@ export default function Home() {
     handleSearch,
     resetSearch,
     scrollToTableRow,
+    cancelScroll,
   } = usePrefectureSearch();
   
 
@@ -202,9 +203,7 @@ export default function Home() {
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && searchResults.length > 0) {
-                            if (scrollTimeoutRef.current) {
-                              clearTimeout(scrollTimeoutRef.current);
-                            }
+                            cancelScroll();
                             scrollToTableRow(searchResults[0]);
                             const mapSection = document.getElementById('map-section');
                             if (mapSection) {
