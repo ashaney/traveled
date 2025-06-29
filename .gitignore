@@ -188,3 +188,7 @@ optimize.md
 # OpenCode files
 .opencode
 AGENTS.md
+
+# Documentation files (may contain sensitive implementation details)
+MAP_SHARING_IMPLEMENTATION.md
+SHARING_FEATURE.md
