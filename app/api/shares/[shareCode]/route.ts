@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/database';
-import { validateShareCode } from '@/lib/share-utils';
+import { validateShareCode, generateStoragePath } from '@/lib/share-utils';
 
 export async function GET(
   _request: NextRequest,
@@ -83,7 +83,7 @@ export async function DELETE(
     }
 
     // Delete from storage
-    const storagePath = `${user.id}/${shareCode}.png`;
+    const storagePath = generateStoragePath(user.id, shareCode);
     const { error: storageError } = await supabase.storage
       .from('shared-maps')
       .remove([storagePath]);

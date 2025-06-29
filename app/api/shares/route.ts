@@ -120,8 +120,24 @@ export async function POST(request: NextRequest) {
 
     if (shareError) {
       console.error('Failed to create share record:', shareError);
+      
       // Clean up uploaded image if database insert fails
-      await supabase.storage.from('shared-maps').remove([storagePath]);
+      try {
+        const { error: cleanupError } = await supabase.storage.from('shared-maps').remove([storagePath]);
+        if (cleanupError) {
+          console.error('Failed to cleanup storage after database error:', cleanupError);
+        }
+      } catch (cleanupError) {
+        console.error('Exception during storage cleanup:', cleanupError);
+      }
+
+      // Handle specific constraint violations
+      if (shareError.code === '23505') { // Unique constraint violation
+        return NextResponse.json({ 
+          error: 'Share code collision detected. Please try again.' 
+        }, { status: 409 });
+      }
+
       return NextResponse.json({ error: 'Failed to create share record' }, { status: 500 });
     }
 
@@ -198,7 +214,7 @@ export async function DELETE() {
     }
 
     // Delete from storage
-    const storagePath = `${user.id}/${shareData.share_code}.png`;
+    const storagePath = generateStoragePath(user.id, shareData.share_code);
     const { error: storageError } = await supabase.storage
       .from('shared-maps')
       .remove([storagePath]);

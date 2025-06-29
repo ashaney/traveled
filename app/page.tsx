@@ -459,7 +459,7 @@ export default function Home() {
       
       <ShareModal 
         isOpen={showShareModal} 
-        onClose={() => setShowShareModal(false)} 
+        onCloseAction={() => setShowShareModal(false)} 
       />
       
       <SettingsModal 

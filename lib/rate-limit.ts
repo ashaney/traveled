@@ -68,18 +68,9 @@ export const shareCreationLimit = createRateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
   maxRequests: 10, // 10 shares per day
   keyGenerator: (request) => {
-    // Use user ID if available in auth header
-    const authHeader = request.headers.get('authorization');
-    if (authHeader) {
-      // Extract user ID from JWT (simplified)
-      try {
-        const token = authHeader.replace('Bearer ', '');
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        return `user:${payload.sub}`;
-      } catch {
-        // Fall back to IP
-      }
-    }
+    // Use IP-based rate limiting for security
+    // User-specific rate limiting should be handled at the application level
+    // with proper Supabase auth validation
     return getDefaultKey(request);
   }
 });

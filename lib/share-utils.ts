@@ -18,8 +18,11 @@ export function validateShareCode(code: string): boolean {
 
 export function getShareUrl(shareCode: string): string {
   if (typeof window === 'undefined') {
-    // Server-side fallback
-    return `https://traveled.app/share/${shareCode}`;
+    // Server-side: use environment variable or fallback
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'https://traveled.app';
+    return `${baseUrl}/share/${shareCode}`;
   }
   return `${window.location.origin}/share/${shareCode}`;
 }
@@ -50,7 +53,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
       textArea.focus();
       textArea.select();
       
-      const success = document.execCommand('copy');
+      const success = document.execCommand('copy') as boolean;
       document.body.removeChild(textArea);
       return success;
     }
