@@ -15,7 +15,9 @@ interface RateLimitStore {
   };
 }
 
-// In-memory store (in production, use Redis or similar)
+// In-memory store - suitable for small applications with single server instances
+// For production apps with multiple server instances, consider Redis or database-backed rate limiting
+// For this small free app, in-memory storage is acceptable given the usage scale
 const store: RateLimitStore = {};
 
 export function createRateLimit(config: RateLimitConfig) {
@@ -64,6 +66,8 @@ function getDefaultKey(request: Request): string {
 }
 
 // Pre-configured rate limiters
+// Note: Using IP-based rate limiting is safer than JWT parsing and sufficient for this app's scale
+// For enterprise applications, consider dedicated rate limiting services (e.g., Upstash, Redis)
 export const shareCreationLimit = createRateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
   maxRequests: 10, // 10 shares per day

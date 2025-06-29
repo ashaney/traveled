@@ -18,10 +18,11 @@ export function validateShareCode(code: string): boolean {
 
 export function getShareUrl(shareCode: string): string {
   if (typeof window === 'undefined') {
-    // Server-side: use environment variable or fallback
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'https://traveled.app';
+    // Server-side: use environment variables for base URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      process.env.APP_BASE_URL ||
+      'http://localhost:3000'; // Development fallback
     return `${baseUrl}/share/${shareCode}`;
   }
   return `${window.location.origin}/share/${shareCode}`;
