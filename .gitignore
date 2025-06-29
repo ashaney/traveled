@@ -184,3 +184,7 @@ bun.lockb
 .turbo/
 .rush/
 optimize.md
+
+# OpenCode files
+.opencode
+AGENTS.md
