@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search } from "lucide-react";
+import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search, Share2 } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +13,8 @@ import dynamic from 'next/dynamic';
 import { JapanRegionMap } from '@/components/japan-region-map';
 import { VisitDialog } from '@/components/visit-dialog';
 import { PageNav } from '@/components/page-nav';
+import { ShareModal } from '@/components/share-modal';
+import { SettingsModal } from '@/components/settings-modal';
 import { AnimatedHeaderItem } from '@/components/ui/animated-header-item';
 import { PrefectureManagementModal } from '@/components/prefecture-management-modal';
 import { usePrefectureSearch } from '@/hooks/usePrefectureSearch';
@@ -29,6 +31,8 @@ const StatsDashboard = dynamic(() => import('@/components/stats-dashboard').then
 });
 
 export default function Home() {
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -39,6 +43,7 @@ export default function Home() {
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isSignOutHovered, setIsSignOutHovered] = useState(false);
   const [isThemeHovered, setIsThemeHovered] = useState(false);
+  const [isShareHovered, setIsShareHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
@@ -324,6 +329,17 @@ export default function Home() {
               </motion.div>
 
               <AnimatedHeaderItem
+                isHovered={isShareHovered}
+                onHoverStart={() => setIsShareHovered(true)}
+                onHoverEnd={() => setIsShareHovered(false)}
+                onClick={() => setShowShareModal(true)}
+                icon={<Share2 className="w-4 h-4 text-pink-600 dark:text-pink-400" />}
+                label="Share"
+                bgColor="bg-pink-100 dark:bg-pink-900/50"
+                textColor="text-pink-600 dark:text-pink-400"
+              />
+
+              <AnimatedHeaderItem
                 isHovered={isThemeHovered}
                 onHoverStart={() => setIsThemeHovered(true)}
                 onHoverEnd={() => setIsThemeHovered(false)}
@@ -347,6 +363,7 @@ export default function Home() {
                 isHovered={isUserHovered}
                 onHoverStart={() => setIsUserHovered(true)}
                 onHoverEnd={() => setIsUserHovered(false)}
+                onClick={() => setShowSettingsModal(true)}
                 icon={<User className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
                 label={user?.email ?? ''}
                 bgColor="bg-blue-100 dark:bg-blue-900/50"
@@ -439,6 +456,16 @@ export default function Home() {
 
       {/* Page Navigation */}
       <PageNav />
+      
+      <ShareModal 
+        isOpen={showShareModal} 
+        onCloseAction={() => setShowShareModal(false)} 
+      />
+      
+      <SettingsModal 
+        isOpen={showSettingsModal} 
+        onClose={() => setShowSettingsModal(false)} 
+      />
       
       {/* Easter Egg */}
       <AnimatePresence>

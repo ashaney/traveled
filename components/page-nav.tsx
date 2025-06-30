@@ -82,7 +82,9 @@ export function PageNav() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+
+      {/* Navigation */}
       <div className={cn(
         "bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg transition-all duration-200",
         isCollapsed ? "p-2" : "p-2"

@@ -24,6 +24,10 @@ export interface UseMapExportOptions {
    * File name for the downloaded image (without extension)
    */
   fileName?: string;
+  /**
+   * Whether to automatically download the image (defaults to true)
+   */
+  autoDownload?: boolean;
 }
 
 export function useMapExport(options: UseMapExportOptions = {}) {
@@ -35,7 +39,8 @@ export function useMapExport(options: UseMapExportOptions = {}) {
     const {
       element,
       canvasOptions = {},
-      fileName = `japan-travel-map-${new Date().toISOString().split('T')[0]}`
+      fileName = `japan-travel-map-${new Date().toISOString().split('T')[0]}`,
+      autoDownload = true
     } = mergedOptions;
 
     try {
@@ -272,14 +277,17 @@ ${dynamicRules}
         return { success: false, error };
       }
       
-      const link = document.createElement('a');
-      link.download = `${fileName}.png`;
-      link.href = dataUrl;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Only trigger download if autoDownload is true
+      if (autoDownload) {
+        const link = document.createElement('a');
+        link.download = `${fileName}.png`;
+        link.href = dataUrl;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
 
       return {
         success: true,
