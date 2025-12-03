@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Acknowledge Turbopack (Next.js 16 default) while allowing Serwist's webpack config
+  turbopack: {},
   images: {
     remotePatterns: [
       {
