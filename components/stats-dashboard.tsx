@@ -27,7 +27,7 @@ interface DetailModalData {
 // Recharts click event types - matching the actual MouseHandlerDataParam type
 interface RechartsClickData {
   activeIndex?: string | number | null;
-  activeLabel?: string;
+  activeLabel?: string | number;
   activeDataKey?: string | number | ((obj: unknown) => unknown);
   activeCoordinate?: {
     x: number;

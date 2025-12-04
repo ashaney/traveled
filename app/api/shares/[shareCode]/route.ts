@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { Database } from '@/types/database';
+import { createServerClient } from '@/lib/supabase-server';
 import { validateShareCode, generateStoragePath } from '@/lib/share-utils';
 
 export async function GET(
@@ -16,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid share code format' }, { status: 400 });
     }
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const supabase = await createServerClient();
 
     // Get shared map data (no auth required for viewing)
     const { data: shareData, error: shareError } = await supabase
@@ -62,8 +60,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid share code format' }, { status: 400 });
     }
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    
+    const supabase = await createServerClient();
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -125,8 +123,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid share code format' }, { status: 400 });
     }
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    
+    const supabase = await createServerClient();
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -136,14 +134,16 @@ export async function PATCH(
     const body = await _request.json();
     const { title, description, is_active } = body;
 
+    // Build update object
+    const updateData: { title?: string; description?: string | null; is_active?: boolean } = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (is_active !== undefined) updateData.is_active = is_active;
+
     // Update the share
     const { data: shareData, error: updateError } = await supabase
       .from('shared_maps')
-      .update({
-        ...(title !== undefined && { title }),
-        ...(description !== undefined && { description }),
-        ...(is_active !== undefined && { is_active })
-      })
+      .update(updateData)
       .eq('share_code', shareCode)
       .eq('user_id', user.id)
       .select()

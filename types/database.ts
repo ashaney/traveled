@@ -1,6 +1,53 @@
 export type Database = {
   public: {
     Tables: {
+      shared_maps: {
+        Row: {
+          id: string
+          user_id: string
+          share_code: string
+          image_url: string
+          title: string
+          description: string | null
+          is_active: boolean
+          view_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          share_code: string
+          image_url: string
+          title?: string
+          description?: string | null
+          is_active?: boolean
+          view_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          share_code?: string
+          image_url?: string
+          title?: string
+          description?: string | null
+          is_active?: boolean
+          view_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_maps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           id: string
@@ -26,6 +73,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       countries: {
         Row: {
@@ -46,6 +94,7 @@ export type Database = {
           code?: string
           created_at?: string
         }
+        Relationships: []
       }
       regions: {
         Row: {
@@ -72,6 +121,15 @@ export type Database = {
           region_code?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "regions_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       visits: {
         Row: {
@@ -81,9 +139,9 @@ export type Database = {
           country_id: string
           rating: number
           star_rating: number | null
-          visit_year: number // Now required - each visit is for a specific year
-          initial_visit_year: number | null // Legacy field
-          most_recent_visit_year: number | null // Legacy field
+          visit_year: number
+          initial_visit_year: number | null
+          most_recent_visit_year: number | null
           notes: string | null
           created_at: string
           updated_at: string
@@ -95,7 +153,7 @@ export type Database = {
           country_id: string
           rating: number
           star_rating?: number | null
-          visit_year: number // Required for new visits
+          visit_year: number
           initial_visit_year?: number | null
           most_recent_visit_year?: number | null
           notes?: string | null
@@ -116,6 +174,29 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       prefecture_ratings: {
         Row: {
@@ -145,7 +226,51 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "prefecture_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prefecture_ratings_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prefecture_ratings_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          }
+        ]
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      generate_share_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      increment_share_view_count: {
+        Args: {
+          share_code_param: string
+        }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

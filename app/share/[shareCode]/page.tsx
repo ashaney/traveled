@@ -1,8 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { Database } from '@/types/database';
+import { createServerClient } from '@/lib/supabase-server';
 import { validateShareCode, getShareUrl } from '@/lib/share-utils';
 import { PublicShareView } from '@/components/public-share-view';
 
@@ -13,7 +11,7 @@ interface PageProps {
 }
 
 async function getSharedMap(shareCode: string) {
-  const supabase = createServerComponentClient<Database>({ cookies });
+  const supabase = await createServerClient();
 
   const { data: share, error } = await supabase
     .from('shared_maps')
@@ -27,8 +25,8 @@ async function getSharedMap(shareCode: string) {
   }
 
   // Increment view count
-  await supabase.rpc('increment_share_view_count', { 
-    share_code_param: shareCode 
+  await supabase.rpc('increment_share_view_count', {
+    share_code_param: shareCode
   });
 
   return share;

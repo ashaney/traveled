@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { Database } from '@/types/database';
+import { createServerClient } from '@/lib/supabase-server';
 import { generateStoragePath } from '@/lib/share-utils';
 import { shareCreationLimit } from '@/lib/rate-limit';
 
@@ -12,7 +10,7 @@ export async function POST(request: NextRequest) {
     if (!rateLimitResult.success) {
       return NextResponse.json(
         { error: 'Too many shares created. Please try again later.' },
-        { 
+        {
           status: 429,
           headers: {
             'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
@@ -22,8 +20,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    
+    const supabase = await createServerClient();
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -65,8 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingShare) {
-      return NextResponse.json({ 
-        error: 'You already have an active shared map. Please remove it first to create a new one.' 
+      return NextResponse.json({
+        error: 'You already have an active shared map. Please remove it first to create a new one.'
       }, { status: 409 });
     }
 
@@ -120,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     if (shareError) {
       console.error('Failed to create share record:', shareError);
-      
+
       // Clean up uploaded image if database insert fails
       try {
         const { error: cleanupError } = await supabase.storage.from('shared-maps').remove([storagePath]);
@@ -133,8 +131,8 @@ export async function POST(request: NextRequest) {
 
       // Handle specific constraint violations
       if (shareError.code === '23505') { // Unique constraint violation
-        return NextResponse.json({ 
-          error: 'Share code collision detected. Please try again.' 
+        return NextResponse.json({
+          error: 'Share code collision detected. Please try again.'
         }, { status: 409 });
       }
 
@@ -157,8 +155,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    
+    const supabase = await createServerClient();
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -188,8 +186,8 @@ export async function GET() {
 
 export async function DELETE() {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    
+    const supabase = await createServerClient();
+
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
