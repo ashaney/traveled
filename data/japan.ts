@@ -69,3 +69,16 @@ export const japanPrefectures: Country = {
     { id: "okinawa", name: "Okinawa", nameJapanese: "沖縄県", code: "47" }
   ]
 };
+
+// Geographic groupings of the prefectures, in the same order they appear above.
+// Used to group the prefecture dropdown in the travel log by region.
+export const japanRegionGroups: { name: string; nameJapanese: string; regionIds: string[] }[] = [
+  { name: "Hokkaido", nameJapanese: "北海道", regionIds: ["hokkaido"] },
+  { name: "Tohoku", nameJapanese: "東北", regionIds: ["aomori", "iwate", "miyagi", "akita", "yamagata", "fukushima"] },
+  { name: "Kanto", nameJapanese: "関東", regionIds: ["ibaraki", "tochigi", "gunma", "saitama", "chiba", "tokyo", "kanagawa"] },
+  { name: "Chubu", nameJapanese: "中部", regionIds: ["niigata", "toyama", "ishikawa", "fukui", "yamanashi", "nagano", "gifu", "shizuoka", "aichi"] },
+  { name: "Kansai", nameJapanese: "関西", regionIds: ["mie", "shiga", "kyoto", "osaka", "hyogo", "nara", "wakayama"] },
+  { name: "Chugoku", nameJapanese: "中国", regionIds: ["tottori", "shimane", "okayama", "hiroshima", "yamaguchi"] },
+  { name: "Shikoku", nameJapanese: "四国", regionIds: ["tokushima", "kagawa", "ehime", "kochi"] },
+  { name: "Kyushu", nameJapanese: "九州", regionIds: ["fukuoka", "saga", "nagasaki", "kumamoto", "oita", "miyazaki", "kagoshima", "okinawa"] },
+];
