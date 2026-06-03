@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search, Share2 } from "lucide-react";
+import { LogOut, User, MapPin, Table, ExternalLink, Sun, Moon, Monitor, Search, Share2, NotebookPen } from "lucide-react";
 import Image from 'next/image';
 import { motion, AnimatePresence } from "motion/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,7 @@ import { ShareModal } from '@/components/share-modal';
 import { SettingsModal } from '@/components/settings-modal';
 import { AnimatedHeaderItem } from '@/components/ui/animated-header-item';
 import { PrefectureManagementModal } from '@/components/prefecture-management-modal';
+import { TravelLogModal } from '@/components/travel-log-modal';
 import { usePrefectureSearch } from '@/hooks/usePrefectureSearch';
 
 // Dynamic imports for heavy components
@@ -33,6 +34,7 @@ const StatsDashboard = dynamic(() => import('@/components/stats-dashboard').then
 export default function Home() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showTravelLogModal, setShowTravelLogModal] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedVisitId, setSelectedVisitId] = useState<string | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -44,6 +46,7 @@ export default function Home() {
   const [isSignOutHovered, setIsSignOutHovered] = useState(false);
   const [isThemeHovered, setIsThemeHovered] = useState(false);
   const [isShareHovered, setIsShareHovered] = useState(false);
+  const [isTravelLogHovered, setIsTravelLogHovered] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [logoClickCount, setLogoClickCount] = useState(0);
   const [showEasterEgg, setShowEasterEgg] = useState(false);
@@ -329,6 +332,17 @@ export default function Home() {
               </motion.div>
 
               <AnimatedHeaderItem
+                isHovered={isTravelLogHovered}
+                onHoverStart={() => setIsTravelLogHovered(true)}
+                onHoverEnd={() => setIsTravelLogHovered(false)}
+                onClick={() => setShowTravelLogModal(true)}
+                icon={<NotebookPen className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                label="Travel Log"
+                bgColor="bg-emerald-100 dark:bg-emerald-900/50"
+                textColor="text-emerald-600 dark:text-emerald-400"
+              />
+
+              <AnimatedHeaderItem
                 isHovered={isShareHovered}
                 onHoverStart={() => setIsShareHovered(true)}
                 onHoverEnd={() => setIsShareHovered(false)}
@@ -462,9 +476,14 @@ export default function Home() {
         onCloseAction={() => setShowShareModal(false)} 
       />
       
-      <SettingsModal 
-        isOpen={showSettingsModal} 
-        onClose={() => setShowSettingsModal(false)} 
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
+
+      <TravelLogModal
+        open={showTravelLogModal}
+        onClose={() => setShowTravelLogModal(false)}
       />
       
       {/* Easter Egg */}
